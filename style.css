@@ -1613,3 +1613,216 @@ body.riot-theme .bottom-nav {
     margin-right: 6px;
 }
 
+/* ---------- экзамен: "лист бумаги" (js/screens/exam.js) ---------- */
+
+.exam-paper {
+    background:
+        url("assets/backgrounds/exam-paper-bg.jpg"),
+        repeating-linear-gradient(
+            180deg,
+            #3a3020 0px, #3a3020 1px,
+            transparent 1px, transparent 34px
+        ),
+        linear-gradient(160deg, #f4ecd8, #e8dcc0);
+    background-size: cover, 100% 34px, cover;
+    background-position: center, 0 44px, center;
+    background-repeat: no-repeat, repeat-y, no-repeat;
+    border-radius: 4px 16px 4px 16px;
+    padding: 24px 20px;
+    color: #2a2318;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(120, 90, 40, 0.08);
+    position: relative;
+    transform: rotate(-0.4deg);
+    border: 1px solid #d8c9a0;
+}
+
+.exam-paper::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 28px; bottom: 0;
+    width: 2px;
+    background: rgba(210, 90, 90, 0.35);
+}
+
+.exam-header {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #7a5c2e;
+    text-align: center;
+    margin-bottom: 4px;
+    padding-left: 20px;
+}
+
+.exam-title-stamp {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    text-align: center;
+    color: #3a2e18;
+    margin-bottom: 14px;
+    padding-left: 20px;
+}
+
+.exam-progress-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding-left: 20px;
+}
+
+.exam-progress-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #cdbd94;
+    transition: background 0.2s;
+}
+
+.exam-progress-dot-done {
+    background: #7a5c2e;
+}
+
+.exam-question-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #7a5c2e;
+    color: #f4ecd8;
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-right: 8px;
+}
+
+.exam-question-text {
+    font-size: 17px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    padding-left: 20px;
+    color: #2a2318;
+    display: flex;
+    align-items: flex-start;
+}
+
+.exam-option-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid #c9b78a;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 0 0 10px 20px;
+    color: #2a2318;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    width: calc(100% - 20px);
+}
+
+.exam-option-btn:hover {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.exam-option-btn:active {
+    transform: scale(0.98);
+}
+
+.exam-option-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #7a5c2e;
+    color: #7a5c2e;
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.exam-outcome-card {
+    text-align: center;
+    padding: 12px 20px 16px;
+}
+
+.exam-outcome-icon {
+    font-size: 56px;
+    margin-bottom: 8px;
+}
+
+.exam-outcome-score {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: #3a2e18;
+    margin-bottom: 4px;
+}
+
+.exam-outcome-text {
+    font-size: 15px;
+    color: #4a3f28;
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+/* ---------- попап с информацией о профессии (js/screens/exam.js) ---------- */
+
+.exam-info-box {
+    max-width: 420px;
+}
+
+.exam-info-icon {
+    font-size: 44px;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.exam-info-title {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.exam-info-summary {
+    text-align: center;
+    color: #a29bfe;
+    font-size: 14px;
+    margin-bottom: 14px;
+}
+
+.exam-info-details {
+    margin-bottom: 16px;
+}
+
+.exam-info-point {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #c9d0e0;
+    margin-bottom: 8px;
+}
+
+.exam-info-btn-row {
+    display: flex;
+    gap: 8px;
+}
+
+.exam-info-btn-row .btn,
+.exam-info-btn-row .btn-secondary {
+    flex: 1;
+}
+

@@ -170,7 +170,7 @@ async function loadPublicReserveInfo(root) {
     const el = root.querySelector("#reserve-info-public");
     if (!el) return;
     try {
-        const info = await apiFetch("/api/state/reserve");
+        const info = await apiFetch("/api/reserve");
         el.textContent = `🏦 Золотовалютный резерв страны: ${info.golden_reserve.toFixed(1)} 🗳 голосов (копится с продаж Косметики, управляет только президент)`;
     } catch (e) {
         el.textContent = "";

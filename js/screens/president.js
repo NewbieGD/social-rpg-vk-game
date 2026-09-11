@@ -131,7 +131,7 @@ export async function renderPresidentDealsScreen(root) {
 async function loadReserveInfo(root) {
     const el = root.querySelector("#reserve-info");
     try {
-        const info = await apiFetch("/api/state/reserve");
+        const info = await apiFetch("/api/reserve");
         el.textContent = `🏦 В Золотовалютном резерве сейчас: ${info.golden_reserve.toFixed(1)} 🗳 голосов`;
     } catch (e) {
         el.textContent = "";

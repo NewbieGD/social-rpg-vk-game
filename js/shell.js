@@ -100,7 +100,7 @@ export async function renderShell(appRoot) {
 
 async function pollRiotStatus(nav, isArmy) {
     try {
-        const status = await apiFetch("/api/state/active_riot_status");
+        const status = await apiFetch("/api/active_riot_status");
         document.body.classList.toggle("riot-theme", !!status.active);
 
         if (isArmy) {

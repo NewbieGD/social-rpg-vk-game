@@ -5,7 +5,7 @@ export async function renderRiotScreen(root) {
 
     let activeStatus;
     try {
-        activeStatus = await apiFetch("/api/state/active_riot_status");
+        activeStatus = await apiFetch("/api/active_riot_status");
     } catch (e) {
         root.innerHTML = `<div class="error">${e.message}</div>`;
         return;
@@ -18,7 +18,7 @@ export async function renderRiotScreen(root) {
 
     let status;
     try {
-        status = await apiFetch("/api/state/riot_petition");
+        status = await apiFetch("/api/riot_petition");
     } catch (e) {
         root.innerHTML = `<div class="error">${e.message}</div>`;
         return;
@@ -102,13 +102,13 @@ async function vote(root, choice) {
     const resultEl = root.querySelector("#vote-result");
     resultEl.innerHTML = `<div class="loading">Голосуем…</div>`;
     try {
-        const result = await apiFetch("/api/state/riot_petition/vote", { method: "POST", body: { choice } });
+        const result = await apiFetch("/api/riot_petition/vote", { method: "POST", body: { choice } });
         if (result.status === "riot_triggered") {
             resultEl.innerHTML = `<div class="profile-row" style="color:#ff6b81">🔥 Бунт начался! ${result.rioters_count} бастующих вышли на улицы.</div>`;
             setTimeout(() => renderRiotScreen(root), 1500);
             return;
         }
-        const updated = await apiFetch("/api/state/riot_petition");
+        const updated = await apiFetch("/api/riot_petition");
         renderPetition(root, updated);
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
