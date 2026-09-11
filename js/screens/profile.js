@@ -82,7 +82,7 @@ export async function renderProfileScreen(root) {
         `);
     }
 
-    if (user.stage === "worker" && user.profession !== "zavod" && !isPresident) {
+    if (user.stage === "worker" && !isPresident) {
         const authorityLevel = Math.min(Math.floor(Number(user.authority)), 10);
         const authorityBonus = Math.max(0, authorityLevel - 1);
         mainLines.push(`<div class="profile-row">🥋 Авторитет: ${authorityLevel}/10${authorityBonus > 0 ? ` (+${authorityBonus}% к шансу успеха на заявках)` : ""}</div>`);
@@ -193,7 +193,15 @@ export async function renderProfileScreen(root) {
     addProfileNavBtn(navCard, "nav-invite.png", "🔗", "Пригласить друга", () => showInviteLink(null, user.tg_id));
     addProfileNavBtn(navCard, "nav-friends.png", "👥", `Друзья (${user.friend_count})`, () => showOverlayScreen((el) => renderFriendsOverlay(el)));
 
-    const chestBtn = addProfileNavBtn(navCard, "nav-chest.png", "🎁", "Сундук", () => openChestFromNav(chestBtn));
+    let chestStatus;
+    try {
+        chestStatus = await apiFetch("/api/chest/status");
+    } catch (e) {
+        chestStatus = { available: false };
+    }
+    if (chestStatus.available) {
+        const chestBtn = addProfileNavBtn(navCard, "nav-chest.png", "🎁", "Сундук", () => openChestFromNav(chestBtn));
+    }
     if (user.has_oko) {
         addProfileNavBtn(navCard, "nav-oko.png", "👁", "ОКО: статистика", () => showOkoPopup());
     }
@@ -243,24 +251,12 @@ export async function renderProfileScreen(root) {
 }
 
 async function openChestFromNav(btn) {
-    let status;
-    try {
-        status = await apiFetch("/api/chest/status");
-    } catch (e) {
-        alert(e.message);
-        return;
-    }
-    if (!status.available) {
-        alert("Сундук уже открыт сегодня — приходи завтра.");
-        return;
-    }
     btn.disabled = true;
     try {
         const result = await apiFetch("/api/chest/open", { method: "POST" });
-        showChestOverlay(result.amount);
+        showChestOverlay(result.amount, btn);
     } catch (e) {
         alert(e.message);
-    } finally {
         btn.disabled = false;
     }
 }
@@ -421,7 +417,7 @@ export async function renderOtherProfile(root, targetVkId) {
 }
 
 
-function showChestOverlay(amount) {
+function showChestOverlay(amount, chestBtn) {
     const overlay = document.createElement("div");
     overlay.className = "chest-overlay";
     overlay.innerHTML = `
@@ -435,8 +431,7 @@ function showChestOverlay(amount) {
     document.body.appendChild(overlay);
     overlay.querySelector("#chest-claim-btn").onclick = () => {
         overlay.remove();
-        const card = document.querySelector(".chest-card");
-        if (card) card.remove();
+        if (chestBtn) chestBtn.remove();
     };
 }
 
