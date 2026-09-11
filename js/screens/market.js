@@ -1,6 +1,24 @@
 import { apiFetch } from "../api.js";
+import { renderOtherProfile } from "./profile.js";
 
 const MAX_OPEN_REQUESTS = 5;
+
+function showMarketProfileOverlay(vkId) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    renderOtherProfile(content, vkId);
+}
 
 export async function renderMarketScreen(root) {
     root.innerHTML = `
@@ -86,11 +104,12 @@ async function loadRequests(root) {
     }
 
     listEl.innerHTML = "";
-    rows.forEach((r) => {
+    rows.forEach((r, i) => {
         const card = document.createElement("div");
         card.className = "shop-item market-stall-item";
-        const buyerName = r.buyer_username ? "@" + escapeHtml(r.buyer_username) : "ID " + r.buyer_vk_id;
-        card.innerHTML = `<div class="shop-item-name">🛍 ${buyerName} хочет купить: ${escapeHtml(r.item_name)}</div><div class="shop-item-price">Ты получишь: ${r.seller_price.toFixed(0)}₭</div>`;
+        const buyerName = r.buyer_vk_first_name || (r.buyer_username ? "@" + escapeHtml(r.buyer_username) : "ID " + r.buyer_vk_id);
+        const buyerId = `market-buyer-${i}`;
+        card.innerHTML = `<div class="shop-item-name">🛍 <span class="market-buyer-clickable" id="${buyerId}">${r.buyer_vk_photo_url ? `<img src="${r.buyer_vk_photo_url}" class="oko-clicker-photo" alt="">` : ""}${escapeHtml(buyerName)}</span> хочет купить: ${escapeHtml(r.item_name)}</div><div class="shop-item-price">Ты получишь: ${r.seller_price.toFixed(0)}₭</div>`;
 
         const sellBtn = document.createElement("button");
         sellBtn.className = "btn";
@@ -101,6 +120,7 @@ async function loadRequests(root) {
         card.appendChild(sellBtn);
         card.appendChild(resultEl);
         listEl.appendChild(card);
+        card.querySelector(`#${buyerId}`).onclick = () => showMarketProfileOverlay(r.buyer_vk_id);
     });
 }
 
@@ -187,13 +207,15 @@ async function loadHistory(root) {
     }
 
     listEl.innerHTML = "";
-    rows.forEach((r) => {
+    rows.forEach((r, i) => {
         const row = document.createElement("div");
         row.className = "profile-dim";
-        const buyerName = r.buyer_username ? "@" + escapeHtml(r.buyer_username) : "ID " + r.buyer_vk_id;
+        const buyerName = r.buyer_vk_first_name || (r.buyer_username ? "@" + escapeHtml(r.buyer_username) : "ID " + r.buyer_vk_id);
         const time = r.fulfilled_at ? new Date(r.fulfilled_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
-        row.textContent = `${buyerName} купил(а): ${r.item_name} · ${time}`;
+        const buyerId = `market-history-buyer-${i}`;
+        row.innerHTML = `<span class="market-buyer-clickable" id="${buyerId}">${escapeHtml(buyerName)}</span> купил(а): ${escapeHtml(r.item_name)} · ${time}`;
         listEl.appendChild(row);
+        row.querySelector(`#${buyerId}`).onclick = () => showMarketProfileOverlay(r.buyer_vk_id);
     });
 }
 

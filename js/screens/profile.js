@@ -185,26 +185,18 @@ export async function renderProfileScreen(root) {
 
     const navCard = root.querySelector("#profile-right-col");
 
-    addProfileNavBtn(navCard, "🎒 Инвентарь", () => showOverlayScreen(renderInventoryScreen));
-    addProfileNavBtn(navCard, "🚑 Помощь", () => showOverlayScreen(renderDutyScreen));
-    addProfileNavBtn(navCard, "⚔️ Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen));
-    addProfileNavBtn(navCard, "✨ Косметика", () => showFullScreenFrom(root, renderCosmeticsScreen, renderProfileScreen));
+    addProfileNavBtn(navCard, "nav-inventory.png", "🎒", "Инвентарь", () => showOverlayScreen(renderInventoryScreen));
+    addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
+    addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen));
+    addProfileNavBtn(navCard, "nav-cosmetics.png", "✨", "Косметика", () => showOverlayScreen(renderCosmeticsScreen));
+    addProfileNavBtn(navCard, "nav-visitors.png", "👀", "Посетители", () => showOverlayScreen((el) => renderVisitorsOverlay(el)));
+    addProfileNavBtn(navCard, "nav-invite.png", "🔗", "Пригласить друга", () => showInviteLink(null, user.tg_id));
+    addProfileNavBtn(navCard, "nav-friends.png", "👥", `Друзья (${user.friend_count})`, () => showOverlayScreen((el) => renderFriendsOverlay(el)));
 
-    const socialCard = document.createElement("div");
-    socialCard.className = "card";
-    root.appendChild(socialCard);
-
-    const inviteBtn = document.createElement("button");
-    inviteBtn.className = "btn";
-    inviteBtn.textContent = "🔗 Пригласить друга";
-    inviteBtn.onclick = () => showInviteLink(socialCard, user.tg_id);
-    socialCard.appendChild(inviteBtn);
-
-    const friendsBtn = document.createElement("button");
-    friendsBtn.className = "btn btn-secondary";
-    friendsBtn.textContent = `👥 Друзья (${user.friend_count})`;
-    friendsBtn.onclick = () => showFriends(root);
-    socialCard.appendChild(friendsBtn);
+    const chestBtn = addProfileNavBtn(navCard, "nav-chest.png", "🎁", "Сундук", () => openChestFromNav(chestBtn));
+    if (user.has_oko) {
+        addProfileNavBtn(navCard, "nav-oko.png", "👁", "ОКО: статистика", () => showOkoPopup());
+    }
 
     if (DEV_MODE) {
         const testCard = document.createElement("div");
@@ -245,15 +237,79 @@ export async function renderProfileScreen(root) {
         root.appendChild(testCard);
     }
 
-    await appendChestCard(root);
-    await appendVisitorsCard(root);
-    if (user.has_oko) {
-        await appendOkoCard(root);
-    }
-
     if (user.new_buffs && user.new_buffs.length) {
         showNewBuffsPopupQueue(user.new_buffs);
     }
+}
+
+async function openChestFromNav(btn) {
+    let status;
+    try {
+        status = await apiFetch("/api/chest/status");
+    } catch (e) {
+        alert(e.message);
+        return;
+    }
+    if (!status.available) {
+        alert("Сундук уже открыт сегодня — приходи завтра.");
+        return;
+    }
+    btn.disabled = true;
+    try {
+        const result = await apiFetch("/api/chest/open", { method: "POST" });
+        showChestOverlay(result.amount);
+    } catch (e) {
+        alert(e.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function renderVisitorsOverlay(root) {
+    let data;
+    try {
+        data = await apiFetch("/api/profile/visitors");
+    } catch (e) {
+        root.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    root.innerHTML = `<div class="subtitle">👀 Последние посетители профиля</div>`;
+    if (!data.visitors.length) {
+        root.innerHTML += `<div class="profile-dim">Пока никто не заходил — как только кто-то посетит твой профиль, он появится здесь.</div>`;
+        return;
+    }
+    data.visitors.forEach((v) => {
+        const row = document.createElement("div");
+        row.className = "shop-item";
+        const name = v.username ? "@" + escapeHtml(v.username) : "ID " + v.vk_id;
+        const time = new Date(v.visited_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+        row.innerHTML = `<div class="shop-item-name">${name}</div><div class="profile-dim">${time}</div>`;
+        row.onclick = () => showFullScreenFrom(document.getElementById("app"), (el) => renderOtherProfile(el, v.vk_id), renderProfileScreen);
+        root.appendChild(row);
+    });
+}
+
+async function renderFriendsOverlay(root) {
+    let friends;
+    try {
+        friends = await apiFetch("/api/profile/friends");
+    } catch (e) {
+        root.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+    root.innerHTML = `<div class="subtitle">👥 Друзья</div>`;
+    if (!friends.length) {
+        root.innerHTML += `<div class="profile-dim">Пока никого не пригласил(а).</div>`;
+        return;
+    }
+    friends.forEach((f) => {
+        const card = document.createElement("div");
+        card.className = "shop-item";
+        card.innerHTML = `<div class="shop-item-name">${f.username ? "@" + escapeHtml(f.username) : "ID " + f.vk_id}</div>`;
+        card.onclick = () => window.open(f.vk_profile_url, "_blank");
+        root.appendChild(card);
+    });
 }
 
 function showNewBuffsPopupQueue(buffs) {
@@ -276,47 +332,6 @@ function showNewBuffsPopupQueue(buffs) {
     };
 }
 
-async function appendVisitorsCard(root) {
-    let data;
-    try {
-        data = await apiFetch("/api/profile/visitors");
-    } catch (e) {
-        return;
-    }
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<div class="subtitle">👀 Последние посетители профиля</div>`;
-
-    if (!data.visitors.length) {
-        card.innerHTML += `<div class="profile-dim">Пока никто не заходил — как только кто-то посетит твой профиль, он появится здесь.</div>`;
-        root.appendChild(card);
-        return;
-    }
-
-    data.visitors.forEach((v) => {
-        const row = document.createElement("div");
-        row.className = "shop-item";
-        const name = v.username ? "@" + escapeHtml(v.username) : "ID " + v.vk_id;
-        const time = new Date(v.visited_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-        row.innerHTML = `<div class="shop-item-name">${name}</div><div class="profile-dim">${time}</div>`;
-        row.onclick = () => showFullScreenFrom(root, (el) => renderOtherProfile(el, v.vk_id), renderProfileScreen);
-        card.appendChild(row);
-    });
-    root.appendChild(card);
-}
-
-async function appendOkoCard(root) {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<div class="subtitle">👁 ОКО</div><div class="profile-dim">Видно только тебе — статистика переходов в твой настоящий ВК.</div>`;
-    const btn = document.createElement("button");
-    btn.className = "btn";
-    btn.textContent = "👁 Смотреть статистику";
-    btn.onclick = () => showOkoPopup();
-    card.appendChild(btn);
-    root.appendChild(card);
-}
 
 async function showOkoPopup() {
     const overlay = document.createElement("div");
@@ -356,7 +371,7 @@ async function showOkoPopup() {
     }
 }
 
-async function renderOtherProfile(root, targetVkId) {
+export async function renderOtherProfile(root, targetVkId) {
     root.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
     let p;
     try {
@@ -405,39 +420,6 @@ async function renderOtherProfile(root, targetVkId) {
     }
 }
 
-async function appendChestCard(root) {
-    let status;
-    try {
-        status = await apiFetch("/api/chest/status");
-    } catch (e) {
-        return;
-    }
-    if (!status.available) return;
-
-    const card = document.createElement("div");
-    card.className = "card chest-card";
-    card.innerHTML = `
-        <div class="subtitle">🎁 Ежедневный сундук доступен!</div>
-        <div class="profile-dim">Внутри — от ${status.min_amount.toFixed(0)}₭ до ${status.max_amount.toFixed(0)}₭.</div>
-    `;
-    const openBtn = document.createElement("button");
-    openBtn.className = "btn chest-open-btn";
-    openBtn.textContent = "🎁 Открыть сундук";
-    openBtn.onclick = () => openChest(openBtn);
-    card.appendChild(openBtn);
-    root.appendChild(card);
-}
-
-async function openChest(btn) {
-    btn.disabled = true;
-    try {
-        const result = await apiFetch("/api/chest/open", { method: "POST" });
-        showChestOverlay(result.amount);
-    } catch (e) {
-        alert(e.message);
-        btn.disabled = false;
-    }
-}
 
 function showChestOverlay(amount) {
     const overlay = document.createElement("div");
@@ -542,12 +524,17 @@ function showBuffPopup(buff) {
     overlay.querySelector("#buff-close-btn").onclick = () => overlay.remove();
 }
 
-function addProfileNavBtn(container, label, onClick) {
+function addProfileNavBtn(container, iconFile, emoji, label, onClick) {
     const btn = document.createElement("button");
     btn.className = "btn btn-secondary profile-nav-btn";
-    btn.textContent = label;
+    btn.innerHTML = `
+        <img src="assets/ui/${iconFile}" class="profile-nav-icon" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+        <span class="profile-nav-emoji-fallback" style="display:none">${emoji}</span>
+        <span>${escapeHtml(label)}</span>
+    `;
     btn.onclick = onClick;
     container.appendChild(btn);
+    return btn;
 }
 
 async function showOverlayScreen(renderFn) {
@@ -577,37 +564,6 @@ async function showFullScreenFrom(root, renderFn, backToFn) {
     const content = document.createElement("div");
     root.appendChild(content);
     await renderFn(content);
-}
-
-async function showFriends(root) {
-    root.innerHTML = `<div class="loading">Загружаем друзей…</div>`;
-    let friends;
-    try {
-        friends = await apiFetch("/api/profile/friends");
-    } catch (e) {
-        root.innerHTML = `<div class="error">${e.message}</div>`;
-        return;
-    }
-
-    const lines = [`<div class="title">👥 Друзья (${friends.length})</div>`];
-    if (friends.length === 0) {
-        lines.push(`<div class="card"><div class="subtitle">Пока никого не пригласил(а) — вернись в профиль и нажми «Пригласить друга».</div></div>`);
-    }
-    root.innerHTML = lines.join("");
-
-    friends.forEach((f) => {
-        const card = document.createElement("div");
-        card.className = "shop-item";
-        card.innerHTML = `<div class="shop-item-name">${f.username ? "@" + escapeHtml(f.username) : "ID " + f.vk_id}</div>`;
-        card.onclick = () => window.open(f.vk_profile_url, "_blank");
-        root.appendChild(card);
-    });
-
-    const backBtn = document.createElement("button");
-    backBtn.className = "btn btn-secondary";
-    backBtn.textContent = "🔙 Назад в профиль";
-    backBtn.onclick = () => renderProfileScreen(root);
-    root.appendChild(backBtn);
 }
 
 async function giveTestMoney(root, btn) {

@@ -1,5 +1,6 @@
 import { apiFetch } from "../api.js";
 import { burstConfetti, playSuccessSound, playFailSound, shakeElement } from "../fx.js";
+import { renderOtherProfile } from "./profile.js";
 
 export async function renderDuelsScreen(root) {
     root.innerHTML = `
@@ -25,20 +26,46 @@ export async function renderDuelsScreen(root) {
     await loadSent(root);
 }
 
-function vsCard(leftLabel, rightLabel) {
+let vsCardCounter = 0;
+
+function vsCard(opponent) {
+    const uid = `vs-opp-${vsCardCounter++}`;
     return `
         <div class="duel-vs-row">
             <div class="duel-avatar">🥷</div>
             <div class="duel-vs-mid">
                 <div class="duel-vs-badge">VS</div>
             </div>
-            <div class="duel-avatar">🥷</div>
+            <div class="duel-avatar">${opponent.vk_photo_url ? `<img src="${opponent.vk_photo_url}" class="duel-avatar-photo" alt="">` : "🥷"}</div>
         </div>
         <div class="duel-names-row">
-            <div class="duel-name">${leftLabel}</div>
-            <div class="duel-name">${rightLabel}</div>
+            <div class="duel-name">Ты</div>
+            <div class="duel-name duel-name-clickable" id="${uid}">${escapeHtml(nameOf(opponent))}</div>
         </div>
     `;
+}
+
+function wireVsCardClick(container, opponent) {
+    container.querySelectorAll(".duel-name-clickable").forEach((el) => {
+        el.onclick = () => showDuelProfileOverlay(opponent.vk_id);
+    });
+}
+
+function showDuelProfileOverlay(vkId) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    renderOtherProfile(content, vkId);
 }
 
 async function sendChallenge(root) {
@@ -47,10 +74,11 @@ async function sendChallenge(root) {
     try {
         const result = await apiFetch("/api/duels/challenge", { method: "POST" });
         resultEl.innerHTML = `
-            ${vsCard("Ты", nameOf(result.opponent))}
+            ${vsCard(result.opponent)}
             <div class="profile-row" style="color:#7ee787">✅ Вызов отправлен</div>
             <div class="profile-row profile-dim">${escapeHtml(result.stakes)}</div>
         `;
+        wireVsCardClick(resultEl, result.opponent);
         await loadSent(root);
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
@@ -77,9 +105,10 @@ async function loadPending(root) {
         const card = document.createElement("div");
         card.className = "duel-card";
         card.innerHTML = `
-            ${vsCard("Ты", nameOf(duel.challenger))}
+            ${vsCard(duel.challenger)}
             <div class="profile-dim" style="text-align:center;margin-bottom:8px">${escapeHtml(duel.stakes)}</div>
         `;
+        wireVsCardClick(card, duel.challenger);
 
         const btnRow = document.createElement("div");
         btnRow.className = "duel-btn-row";
@@ -152,15 +181,17 @@ async function loadSent(root) {
         const card = document.createElement("div");
         card.className = "duel-card";
         card.innerHTML = `
-            ${vsCard("Ты", nameOf(duel.opponent))}
+            ${vsCard(duel.opponent)}
             <div class="profile-dim" style="text-align:center">⏳ Ждёт ответа…</div>
         `;
+        wireVsCardClick(card, duel.opponent);
         listEl.appendChild(card);
     });
 }
 
 function nameOf(p) {
-    return (p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id) + (p.profession ? " (" + escapeHtml(p.profession) + ")" : "");
+    const base = p.vk_first_name || (p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id);
+    return base + (p.profession ? " (" + escapeHtml(p.profession) + ")" : "");
 }
 
 function escapeHtml(str) {

@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { renderOtherProfile } from "./profile.js";
 
 export async function renderLeaderboardScreen(root) {
     root.innerHTML = `
@@ -38,7 +39,7 @@ async function loadRating(root) {
     renderRows(body, rows, (r, i) => ({
         title: `${medal(i)} ${nameOf(r)}${r.profession ? " — " + escapeHtml(r.profession) : ""}`,
         value: `⭐ ${r.rating.toFixed(1)}`,
-        url: r.vk_profile_url,
+        vkId: r.vk_id,
         movement: r.movement,
         cosmetics: r.cosmetics,
     }));
@@ -59,7 +60,7 @@ async function loadDuels(root) {
     renderRows(body, rows, (r, i) => ({
         title: `${medal(i)} ${nameOf(r)}`,
         value: `⚔️ ${r.duel_wins}`,
-        url: r.vk_profile_url,
+        vkId: r.vk_id,
         movement: r.movement,
         cosmetics: r.cosmetics,
     }));
@@ -86,9 +87,26 @@ function renderRows(body, rows, mapFn) {
             <div class="shop-item-name"><span class="${nameClass}">${info.title}</span>${badges ? " " + badges : ""}</div>
             <div class="shop-item-price">${info.value}</div>
         `;
-        card.onclick = () => window.open(info.url, "_blank");
+        card.onclick = () => showLeaderboardProfileOverlay(info.vkId);
         body.appendChild(card);
     });
+}
+
+function showLeaderboardProfileOverlay(vkId) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    renderOtherProfile(content, vkId);
 }
 
 function medal(index) {

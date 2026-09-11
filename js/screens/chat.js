@@ -1,5 +1,6 @@
 import { apiFetch } from "../api.js";
 import { playMessageSound } from "../fx.js";
+import { renderOtherProfile } from "./profile.js";
 
 const POLL_INTERVAL_MS = 3000;
 const THIEF_CHECK_INTERVAL_MS = 10000;
@@ -263,6 +264,23 @@ async function unmuteChat(root, chatType) {
     }
 }
 
+function showProfileOverlay(vkId) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    renderOtherProfile(content, vkId);
+}
+
 function appendMessage(container, m, myVkId) {
     const el = document.createElement("div");
     if (m.is_system) {
@@ -271,9 +289,18 @@ function appendMessage(container, m, myVkId) {
     } else {
         const isOwn = myVkId !== null && m.sender_vk_id === myVkId;
         el.className = isOwn ? "chat-msg chat-msg-own" : "chat-msg";
-        el.innerHTML = isOwn
-            ? escapeHtml(m.text)
-            : `<div class="chat-msg-sender">${escapeHtml(m.sender_display)}</div>${escapeHtml(m.text)}`;
+        const canOpenProfile = !isOwn && !m.identity_hidden;
+        const senderLine = canOpenProfile
+            ? `<div class="chat-msg-sender chat-msg-sender-clickable" id="sender-${m.id}">${m.sender_vk_photo_url ? `<img src="${m.sender_vk_photo_url}" class="oko-clicker-photo" alt="">` : ""}${escapeHtml(m.sender_vk_first_name || m.sender_display)}</div>`
+            : `<div class="chat-msg-sender">${escapeHtml(m.sender_display)}</div>`;
+        el.innerHTML = isOwn ? escapeHtml(m.text) : `${senderLine}${escapeHtml(m.text)}`;
+        if (canOpenProfile) {
+            container.appendChild(el);
+            el.querySelector(`#sender-${m.id}`).onclick = () => showProfileOverlay(m.sender_vk_id);
+            container.scrollTop = container.scrollHeight;
+            if (!isOwn) playMessageSound();
+            return;
+        }
         if (!isOwn) {
             playMessageSound();
         }

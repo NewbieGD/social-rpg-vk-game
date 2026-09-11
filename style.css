@@ -414,6 +414,12 @@ body {
     margin-bottom: 2px;
 }
 
+.chat-msg-sender-clickable {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
 .chat-msg-system {
     align-self: center;
     background: none;
@@ -931,6 +937,24 @@ body {
     justify-content: center;
     font-size: 24px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.duel-avatar-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.duel-name-clickable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
+.market-buyer-clickable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    color: #a29bfe;
 }
 
 @keyframes duel-vs-pulse {
@@ -1416,11 +1440,6 @@ body.riot-theme .bottom-nav {
     gap: 8px;
 }
 
-.profile-nav-btn {
-    flex: 1 1 auto;
-    min-width: 130px;
-}
-
 .profile-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -1519,6 +1538,26 @@ body.riot-theme .bottom-nav {
 
 .profile-nav-btn {
     width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+.profile-nav-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.profile-nav-emoji-fallback {
+    font-size: 20px;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .profile-buff-row {
