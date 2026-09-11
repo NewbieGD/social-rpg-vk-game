@@ -85,7 +85,7 @@ export async function renderShell(appRoot) {
         const btn = document.createElement("button");
         btn.className = "nav-btn";
         btn.id = `nav-${item.id}`;
-        btn.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${item.id === "notifications" ? '<span class="nav-badge" id="notif-badge" style="display:none">0</span>' : ""}${item.id === "army" ? '<span class="nav-badge" id="army-badge" style="display:none">!</span>' : ""}`;
+        btn.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${item.id === "notifications" ? '<span class="nav-badge" id="notif-badge" style="display:none">0</span>' : ""}${item.id === "army" ? '<span class="nav-badge" id="army-badge" style="display:none">!</span>' : ""}${item.id === "work" ? '<span class="nav-badge" id="work-badge" style="display:none">0</span>' : ""}`;
         btn.onclick = () => switchTo(item.id, content, nav, navItems);
         nav.appendChild(btn);
     });
@@ -96,6 +96,25 @@ export async function renderShell(appRoot) {
 
     pollRiotStatus(nav, isArmy);
     setInterval(() => pollRiotStatus(nav, isArmy), 15000);
+
+    pollPendingDuty(nav);
+    setInterval(() => pollPendingDuty(nav), 20000);
+}
+
+async function pollPendingDuty(nav) {
+    const badge = nav.querySelector("#work-badge");
+    if (!badge) return;
+    try {
+        const pending = await apiFetch("/api/duty/pending");
+        if (pending.length > 0) {
+            badge.textContent = `+${pending.length}`;
+            badge.style.display = "inline-block";
+        } else {
+            badge.style.display = "none";
+        }
+    } catch (e) {
+        // не критично — просто не покажем значок в этот раз
+    }
 }
 
 async function pollRiotStatus(nav, isArmy) {

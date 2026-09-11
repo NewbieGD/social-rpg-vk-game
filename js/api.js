@@ -16,7 +16,17 @@ export function clearToken() {
 
 class ApiError extends Error {
     constructor(status, detail) {
-        super(detail || `Ошибка ${status}`);
+        // FastAPI при ошибке валидации (422) отдаёт detail не строкой, а
+        // списком объектов вида {loc, msg, type} — раньше это просто
+        // превращалось в "[object Object]" при попытке показать как текст.
+        // Достаём читаемое сообщение из каждого объекта отдельно.
+        let message = detail;
+        if (Array.isArray(detail)) {
+            message = detail.map((d) => (d && typeof d === "object" ? d.msg || JSON.stringify(d) : String(d))).join("; ");
+        } else if (detail && typeof detail === "object") {
+            message = detail.msg || JSON.stringify(detail);
+        }
+        super(message || `Ошибка ${status}`);
         this.status = status;
         this.detail = detail;
     }

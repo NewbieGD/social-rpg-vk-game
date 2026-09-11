@@ -1543,6 +1543,18 @@ body.riot-theme .bottom-nav {
     gap: 8px;
     text-align: left;
     justify-content: flex-start;
+    position: relative;
+}
+
+.profile-nav-badge {
+    margin-left: auto;
+    background: #ff6b81;
+    color: #fff;
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    padding: 2px 7px;
+    border-radius: 10px;
 }
 
 .profile-nav-icon {

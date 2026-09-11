@@ -71,7 +71,14 @@ export async function renderProfileScreen(root) {
     if (user.net_rate_per_hour > 0) {
         mainLines.push(`<div class="profile-row">📈 Сейчас зарабатываешь: ${user.net_rate_per_hour.toFixed(2)} ₭/час</div>`);
     } else if (user.zero_rate_reason) {
-        mainLines.push(`<div class="profile-row profile-dim">📉 Доход сейчас: 0 ₭/час (${escapeHtml(user.zero_rate_reason)})</div>`);
+        const isCommuteReason = user.zero_rate_reason.includes("не был(а) на работе/учёбе");
+        let reasonText = user.zero_rate_reason;
+        if (isCommuteReason) {
+            reasonText = user.stage === "student"
+                ? "ты не учишься, стипендия не начисляется — перейди во вкладку Учёба"
+                : "ты не работаешь, доход не идёт — перейди во вкладку Работа";
+        }
+        mainLines.push(`<div class="profile-row profile-dim">📉 Доход сейчас: 0 ₭/час (${escapeHtml(reasonText)})</div>`);
     }
 
     if (user.progress && user.progress.kind === "graduation") {
@@ -189,7 +196,7 @@ export async function renderProfileScreen(root) {
     addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
     addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen));
     addProfileNavBtn(navCard, "nav-cosmetics.png", "✨", "Косметика", () => showOverlayScreen(renderCosmeticsScreen));
-    addProfileNavBtn(navCard, "nav-visitors.png", "👀", "Посетители", () => showOverlayScreen((el) => renderVisitorsOverlay(el)));
+    addProfileNavBtn(navCard, "nav-visitors.png", "👀", "Посетители", () => showOverlayScreen((el) => renderVisitorsOverlay(el)), user.new_visitors_count || 0);
     addProfileNavBtn(navCard, "nav-invite.png", "🔗", "Пригласить друга", () => showInviteLink(null, user.tg_id));
     addProfileNavBtn(navCard, "nav-friends.png", "👥", `Друзья (${user.friend_count})`, () => showOverlayScreen((el) => renderFriendsOverlay(el)));
 
@@ -203,7 +210,10 @@ export async function renderProfileScreen(root) {
         const chestBtn = addProfileNavBtn(navCard, "nav-chest.png", "🎁", "Сундук", () => openChestFromNav(chestBtn));
     }
     if (user.has_oko) {
-        addProfileNavBtn(navCard, "nav-oko.png", "👁", "ОКО: статистика", () => showOkoPopup());
+        addProfileNavBtn(navCard, "nav-oko.png", "👁", "ОКО: статистика", () => showOkoPopup(), user.new_vk_clicks_count || 0);
+    }
+    if (user.has_accounting_book) {
+        addProfileNavBtn(navCard, "nav-accounting.png", "📒", "Финансовые операции", () => showAccountingPopup());
     }
 
     if (DEV_MODE) {
@@ -281,7 +291,7 @@ async function renderVisitorsOverlay(root) {
         const name = v.username ? "@" + escapeHtml(v.username) : "ID " + v.vk_id;
         const time = new Date(v.visited_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
         row.innerHTML = `<div class="shop-item-name">${name}</div><div class="profile-dim">${time}</div>`;
-        row.onclick = () => showFullScreenFrom(document.getElementById("app"), (el) => renderOtherProfile(el, v.vk_id), renderProfileScreen);
+        row.onclick = () => showStackedProfileOverlay(v.vk_id);
         root.appendChild(row);
     });
 }
@@ -359,7 +369,45 @@ async function showOkoPopup() {
             const name = c.vk_first_name || (c.username ? "@" + escapeHtml(c.username) : "ID " + c.vk_id);
             const time = new Date(c.clicked_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
             row.innerHTML = `<div class="shop-item-name">${c.vk_photo_url ? `<img src="${c.vk_photo_url}" class="oko-clicker-photo" alt="">` : ""}${escapeHtml(name)}</div><div class="profile-dim">${time}</div>`;
-            row.onclick = () => { overlay.remove(); showFullScreenFrom(document.getElementById("app"), (el) => renderOtherProfile(el, c.vk_id), renderProfileScreen); };
+            row.onclick = () => showStackedProfileOverlay(c.vk_id);
+            content.appendChild(row);
+        });
+    } catch (e) {
+        content.innerHTML = `<div class="error">${e.message}</div>`;
+    }
+}
+
+async function showAccountingPopup() {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    content.innerHTML = `<div class="loading">Загружаем…</div>`;
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    try {
+        const data = await apiFetch("/api/profile/transactions");
+        content.innerHTML = `<div class="subtitle">📒 Последние операции</div>`;
+        if (!data.transactions.length) {
+            content.innerHTML += `<div class="profile-dim">Пока ничего не происходило с балансом.</div>`;
+            return;
+        }
+        data.transactions.forEach((t) => {
+            const row = document.createElement("div");
+            row.className = "shop-item";
+            const sign = t.amount >= 0 ? "+" : "";
+            const color = t.amount >= 0 ? "#7ee787" : "#ff6b81";
+            const time = new Date(t.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+            const label = t.item_name ? `${t.label}: ${escapeHtml(t.item_name)}` : t.label;
+            row.innerHTML = `<div class="shop-item-name">${label}</div><div class="profile-dim">${time}</div><div style="color:${color};font-weight:700">${sign}${t.amount.toFixed(2)}₭</div>`;
             content.appendChild(row);
         });
     } catch (e) {
@@ -519,17 +567,35 @@ function showBuffPopup(buff) {
     overlay.querySelector("#buff-close-btn").onclick = () => overlay.remove();
 }
 
-function addProfileNavBtn(container, iconFile, emoji, label, onClick) {
+function addProfileNavBtn(container, iconFile, emoji, label, onClick, badgeCount = 0) {
     const btn = document.createElement("button");
     btn.className = "btn btn-secondary profile-nav-btn";
     btn.innerHTML = `
         <img src="assets/ui/${iconFile}" class="profile-nav-icon" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
         <span class="profile-nav-emoji-fallback" style="display:none">${emoji}</span>
         <span>${escapeHtml(label)}</span>
+        ${badgeCount > 0 ? `<span class="profile-nav-badge">+${badgeCount}</span>` : ""}
     `;
     btn.onclick = onClick;
     container.appendChild(btn);
     return btn;
+}
+
+function showStackedProfileOverlay(vkId) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    renderOtherProfile(content, vkId);
 }
 
 async function showOverlayScreen(renderFn) {
