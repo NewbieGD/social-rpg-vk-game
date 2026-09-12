@@ -4,36 +4,54 @@
     padding: 0;
 }
 
+/* Безопасное масштабирование медиа-элементов для VK WebView */
+img, svg, video {
+    max-width: 100%;
+    height: auto;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden; /* Исключаем горизонтальный скролл iframe */
+}
+
 body {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    /* Собственный фон (assets/backgrounds/game-bg.jpg) рисуется ПОВЕРХ градиента —
-       если файла нет, браузер просто не показывает этот слой и градиент остаётся
-       как есть, ничего не ломается. Чтобы заменить фон всей игры — положи файл
-       по этому пути (см. assets/README.md). */
+    /* Оптимизированный фон под WebView VK (без background-attachment: fixed, который ломается в iframe) */
     background:
         url("assets/backgrounds/game-bg.jpg"),
         radial-gradient(circle at 15% 0%, rgba(108, 92, 231, 0.12), transparent 40%),
         radial-gradient(circle at 85% 100%, rgba(255, 107, 129, 0.08), transparent 40%),
         linear-gradient(180deg, #14192b 0%, #0c1120 100%);
     background-size: cover, auto, auto, auto;
-    background-position: center, center, center, center;
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
-    background-attachment: fixed;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-color: #0c1120;
     color: #eee;
     min-height: 100vh;
+    min-height: 100dvh; /* Динамическая высота для мобильных устройств */
     display: flex;
     justify-content: center;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #app {
     width: 100%;
     max-width: 480px;
     min-height: 100vh;
-    background: rgba(15, 22, 38, 0.55);
+    min-height: 100dvh;
+    background: rgba(15, 22, 38, 0.85);
     backdrop-filter: blur(6px);
     display: flex;
     flex-direction: column;
-    padding: 16px;
+    padding: 0;
+    /* Учет безопасных зон VK (шапка приложения и нативная шторка) */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    position: relative;
 }
 
 .loading {
@@ -191,29 +209,27 @@ body {
 
 /* ---------- навигация и профиль ---------- */
 
-#app {
-    padding: 0;
-}
-
 .screen-content {
     flex: 1;
     padding: 16px;
-    padding-bottom: 8px;
+    padding-bottom: 12px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .bottom-nav {
     display: flex;
     border-top: 1px solid #232d47;
     background: #141b2e;
-    padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
+    padding: 6px 2px calc(6px + env(safe-area-inset-bottom, 0px));
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    flex-shrink: 0;
 }
 
 .nav-btn {
     position: relative;
-    flex: 0 0 auto;
+    flex: 1 0 auto;
     min-width: 62px;
     background: none;
     border: none;
@@ -240,6 +256,7 @@ body {
     min-width: 15px;
     height: 15px;
     border-radius: 8px;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 3px;
@@ -319,23 +336,17 @@ body {
 }
 
 .profile-main-col {
-    flex: 2 1 200px;
-    min-width: 180px;
+    flex: 2 1 180px;
+    min-width: 140px;
 }
 
 .profile-buffs-col {
-    flex: 1 1 160px;
-    min-width: 150px;
+    flex: 1 1 140px;
+    min-width: 130px;
     border-left: 1px solid #232d47;
     padding-left: 14px;
 }
 
-/* На типичном экране телефона три колонки (аватар+основное+баффы) не
-   помещаются в ряд, и эта колонка переносится вниз отдельным блоком — левая
-   граница, задуманная для разделения колонок бок о бок, там смотрится как
-   случайная вертикальная черта. Меняем её на верхнюю, когда колонка реально
-   перенеслась (используем ту же точку, где .profile-layout уже не влезает
-   в ряд при её собственных min-width). */
 @media (max-width: 480px) {
     .profile-buffs-col {
         border-left: none;
@@ -373,7 +384,8 @@ body {
     background: linear-gradient(180deg, #171f34, #131a2c);
     border-radius: 12px;
     padding: 12px;
-    height: 460px;
+    height: 400px;
+    max-height: 55vh;
     overflow-y: auto;
     margin-bottom: 8px;
     display: flex;
@@ -388,7 +400,7 @@ body {
 
 .chat-msg {
     align-self: flex-start;
-    max-width: 78%;
+    max-width: 85%;
     background: #232d47;
     padding: 8px 12px;
     border-radius: 14px;
@@ -471,11 +483,13 @@ body {
 .map-svg-card {
     padding: 8px;
     overflow: hidden;
+    width: 100%;
 }
 
 .map-svg {
     width: 100%;
     height: auto;
+    max-height: 70vh;
     display: block;
     border-radius: 10px;
 }
@@ -543,13 +557,14 @@ body {
     flex-wrap: wrap;
     gap: 8px;
     padding: 4px 0;
+    justify-content: flex-start;
 }
 
 .inv-slot {
     position: relative;
-    width: 64px;
-    height: 64px;
-    flex: 0 0 64px;
+    width: 60px;
+    height: 60px;
+    flex: 0 0 60px;
     background: linear-gradient(160deg, #232d47, #171f34);
     border: 1px solid #3a4568;
     border-radius: 10px;
@@ -659,19 +674,20 @@ body {
 .shop-shelf {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     padding: 10px 10px 16px;
     background: linear-gradient(180deg, rgba(108, 74, 42, 0.08), rgba(108, 74, 42, 0.02));
     border-bottom: 6px solid #6b4a2a;
     border-radius: 4px;
     box-shadow: 0 6px 6px -4px rgba(0, 0, 0, 0.4);
+    justify-content: space-around;
 }
 
 .shop-slot {
     position: relative;
-    width: 68px;
-    height: 78px;
-    flex: 0 0 68px;
+    width: 64px;
+    height: 74px;
+    flex: 0 0 64px;
     background: linear-gradient(160deg, #232d47, #171f34);
     border: 1px solid #3a4568;
     border-radius: 10px;
@@ -746,23 +762,23 @@ body {
     border-bottom: none;
 }
 
-/* ---------- широкие экраны (планшет/компьютер) ----------
-   Мобильная раскладка (один столбец, нижнее меню) остаётся без изменений по
-   умолчанию — здесь только добавки для широких окон: меню становится боковой
-   панелью слева, а сам контент — шире и с отступами, но по-прежнему в один
-   столбец (без CSS columns — они плохо совмещались с сеткой инвентаря и другими
-   гибкими блоками, обрезая ячейки). */
+/* ---------- широкие экраны (Десктоп VK / Планшет) ---------- */
 
 @media (min-width: 900px) {
     body {
-        align-items: stretch;
+        align-items: center;
     }
 
     #app {
-        max-width: 1200px;
+        max-width: 1000px;
+        height: 92vh;
+        min-height: 600px;
+        max-height: 800px;
         flex-direction: row;
-        padding: 0;
-        margin: 0 auto;
+        border-radius: 16px;
+        border: 1px solid #232d47;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
     }
 
     .bottom-nav {
@@ -775,7 +791,7 @@ body {
         padding: 20px 10px;
         overflow-x: visible;
         overflow-y: auto;
-        gap: 2px;
+        gap: 4px;
     }
 
     .nav-btn {
@@ -787,6 +803,7 @@ body {
         font-size: 14px;
         white-space: normal;
         min-width: 0;
+        width: 100%;
     }
 
     .nav-btn.active {
@@ -800,23 +817,20 @@ body {
     .screen-content {
         flex: 1;
         padding: 24px 28px;
-        max-width: 720px;
     }
 
     .chat-messages {
-        height: 560px;
+        height: 480px;
+        max-height: 60vh;
     }
 
-    /* Карта — единственное исключение из общего ограничения ширины контента.
-       При новой, более высокой пропорции (700x820) нельзя давать ей ту же
-       ширину, что и раньше — экран был бы больше 1000px высотой. */
     .map-svg-card {
         max-width: 620px;
-        width: 100%;
+        margin: 0 auto;
     }
 }
 
-/* ---------- эффекты (js/fx.js): тряска, конфетти, летящие цифры ---------- */
+/* ---------- эффекты (js/fx.js) ---------- */
 
 @keyframes fx-shake {
     0%, 100% { transform: translateX(0); }
@@ -871,7 +885,7 @@ body {
     100% { opacity: 0; transform: translate(-50%, -40px); }
 }
 
-/* ---------- косметика за реальные деньги (js/screens/cosmetics.js) ---------- */
+/* ---------- косметика ---------- */
 
 .cosmetic-golden-name {
     color: #ffd873;
@@ -898,7 +912,7 @@ body {
     box-shadow: 0 0 10px rgba(162, 155, 254, 0.7), 0 0 22px rgba(162, 155, 254, 0.4);
 }
 
-/* ---------- дуэли: VS-карточки (js/screens/duels.js) ---------- */
+/* ---------- дуэли ---------- */
 
 .duel-challenge-card {
     text-align: center;
@@ -976,6 +990,7 @@ body {
     align-items: center;
     justify-content: center;
     animation: duel-vs-pulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
 }
 
 .duel-names-row {
@@ -1021,7 +1036,7 @@ body {
     text-shadow: 0 0 12px rgba(255, 158, 181, 0.5);
 }
 
-/* ---------- флаг страны (js/screens/state.js) ---------- */
+/* ---------- флаг страны ---------- */
 
 .country-flag {
     display: flex;
@@ -1072,7 +1087,7 @@ body {
     margin-top: 2px;
 }
 
-/* ---------- таблица лидеров: значки движения позиции ---------- */
+/* ---------- таблица лидеров ---------- */
 
 .lb-row {
     display: flex;
@@ -1098,7 +1113,7 @@ body {
     color: #7a8399;
 }
 
-/* ---------- рынок: вывеска торговой палатки (js/screens/market.js) ---------- */
+/* ---------- рынок ---------- */
 
 .market-stall-sign {
     text-align: center;
@@ -1117,7 +1132,7 @@ body {
     border-color: #6b4a2a;
 }
 
-/* ---------- косметика: наглядный превью каждого эффекта ---------- */
+/* ---------- косметика ---------- */
 
 .cosmetics-preview {
     background: #0f1626;
@@ -1133,7 +1148,7 @@ body {
     margin: 0 auto;
 }
 
-/* ---------- новости страны: экран "телевизора" с бегущей строкой ---------- */
+/* ---------- новости страны ---------- */
 
 .news-tv {
     background: #0a0e18;
@@ -1194,13 +1209,13 @@ body {
     text-shadow: 0 0 6px rgba(126, 231, 135, 0.4);
 }
 
-/* ---------- личные уведомления: анимация появления по очереди ---------- */
+/* ---------- личные уведомления ---------- */
 
 .notif-card {
     animation: card-enter 0.3s ease-out both;
 }
 
-/* ---------- Работа/Помощь: игровые баннеры (js/screens/work.js, duty.js) ---------- */
+/* ---------- Работа/Помощь ---------- */
 
 .work-banner {
     text-align: center;
@@ -1252,7 +1267,7 @@ body {
     vertical-align: middle;
 }
 
-/* ---------- голосования: строка с голосами и списком проголосовавших ---------- */
+/* ---------- голосования ---------- */
 
 .election-choice-row {
     margin-bottom: 8px;
@@ -1263,7 +1278,7 @@ body {
     font-size: 11px;
 }
 
-/* ---------- бунт: полоса накопительного прогресса (js/screens/riot.js) ---------- */
+/* ---------- бунт ---------- */
 
 .riot-progress-track {
     background: #1c2438;
@@ -1279,8 +1294,6 @@ body {
     background: linear-gradient(90deg, #ff9e42, #ff6b81);
     transition: width 0.3s ease-out;
 }
-
-/* ---------- бунт: красная тема на всё приложение, пока идёт бунт ---------- */
 
 body.riot-theme {
     animation: riot-pulse-bg 3s ease-in-out infinite;
@@ -1322,7 +1335,7 @@ body.riot-theme .bottom-nav {
     transition: width 0.3s ease-out;
 }
 
-/* ---------- чат: тематическое оформление по типу (js/screens/chat.js) ---------- */
+/* ---------- чат ---------- */
 
 .chat-room-banner {
     text-align: center;
@@ -1377,7 +1390,7 @@ body.riot-theme .bottom-nav {
     border-color: #5a4a2a;
 }
 
-/* ---------- ежедневный сундук (js/screens/profile.js) ---------- */
+/* ---------- сундук & оверлеи ---------- */
 
 .chest-card {
     border-color: #ffd873;
@@ -1393,21 +1406,25 @@ body.riot-theme .bottom-nav {
 .chest-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw;
+    height: 100dvh;
     background: rgba(10, 12, 20, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: card-enter 0.2s ease-out;
+    animation: card-enter 0.25s ease-out;
+    padding: 16px;
 }
 
 .chest-overlay-box {
     background: linear-gradient(160deg, #232d47, #171f34);
     border: 2px solid #ffd873;
     border-radius: 18px;
-    padding: 32px 28px;
+    padding: 24px 20px;
     text-align: center;
-    max-width: 300px;
+    width: 100%;
+    max-width: 320px;
     box-shadow: 0 0 30px rgba(255, 216, 115, 0.3);
 }
 
@@ -1432,7 +1449,7 @@ body.riot-theme .bottom-nav {
     margin-bottom: 16px;
 }
 
-/* ---------- профиль: кнопки-переходы и оверлей поверх (js/screens/profile.js) ---------- */
+/* ---------- профиль: оверлей ---------- */
 
 .profile-nav-card {
     display: flex;
@@ -1443,12 +1460,16 @@ body.riot-theme .bottom-nav {
 .profile-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw;
+    height: 100dvh;
     background: rgba(10, 12, 20, 0.88);
     z-index: 900;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     display: flex;
     justify-content: center;
-    padding: 20px 12px;
+    align-items: flex-start;
+    padding: calc(20px + env(safe-area-inset-top, 0px)) 12px calc(20px + env(safe-area-inset-bottom, 0px));
     animation: card-enter 0.2s ease-out;
 }
 
@@ -1456,10 +1477,10 @@ body.riot-theme .bottom-nav {
     background: #171f34;
     border: 1px solid #2a3350;
     border-radius: 14px;
-    padding: 14px;
+    padding: 16px;
     max-width: 480px;
     width: 100%;
-    height: fit-content;
+    margin: auto 0;
 }
 
 .profile-overlay-close {
@@ -1467,7 +1488,7 @@ body.riot-theme .bottom-nav {
     margin-bottom: 10px;
 }
 
-/* ---------- профиль президента: золотая тема, огненное имя, рамка (js/screens/profile.js) ---------- */
+/* ---------- профиль президента ---------- */
 
 .president-top-banner {
     text-align: center;
@@ -1515,7 +1536,7 @@ body.riot-theme .bottom-nav {
     box-shadow: 0 0 14px rgba(255, 179, 71, 0.7), 0 0 4px rgba(255, 77, 46, 0.5);
 }
 
-/* ---------- профиль: layout слева/справа + иконки бафов (js/screens/profile.js) ---------- */
+/* ---------- профиль v2 ---------- */
 
 .profile-layout-v2 {
     display: flex;
@@ -1524,13 +1545,13 @@ body.riot-theme .bottom-nav {
 }
 
 .profile-left-col {
-    flex: 2 1 220px;
+    flex: 2 1 200px;
     display: flex;
     gap: 12px;
 }
 
 .profile-right-col {
-    flex: 1 1 140px;
+    flex: 1 1 130px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1598,6 +1619,7 @@ body.riot-theme .bottom-nav {
     background-size: cover;
     background-position: center;
     transition: transform 0.15s;
+    flex-shrink: 0;
 }
 
 .buff-icon-btn:active {
@@ -1614,7 +1636,7 @@ body.riot-theme .bottom-nav {
     box-shadow: 0 0 8px rgba(255, 107, 129, 0.25);
 }
 
-/* ---------- фото из ВК других игроков (js/screens/profile.js, chat.js, duels.js) ---------- */
+/* ---------- аватарки пользователей VK ---------- */
 
 .oko-clicker-photo {
     width: 28px;
@@ -1623,9 +1645,10 @@ body.riot-theme .bottom-nav {
     object-fit: cover;
     vertical-align: middle;
     margin-right: 6px;
+    flex-shrink: 0;
 }
 
-/* ---------- экзамен: "лист бумаги" (js/screens/exam.js) ---------- */
+/* ---------- экзамен ---------- */
 
 .exam-paper {
     background:
@@ -1640,18 +1663,18 @@ body.riot-theme .bottom-nav {
     background-position: center, 0 44px, center;
     background-repeat: no-repeat, repeat-y, no-repeat;
     border-radius: 4px 16px 4px 16px;
-    padding: 24px 20px;
+    padding: 24px 16px;
     color: #2a2318;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(120, 90, 40, 0.08);
     position: relative;
-    transform: rotate(-0.4deg);
     border: 1px solid #d8c9a0;
+    overflow: hidden;
 }
 
 .exam-paper::before {
     content: "";
     position: absolute;
-    top: 0; left: 28px; bottom: 0;
+    top: 0; left: 18px; bottom: 0;
     width: 2px;
     background: rgba(210, 90, 90, 0.35);
 }
@@ -1665,7 +1688,7 @@ body.riot-theme .bottom-nav {
     color: #7a5c2e;
     text-align: center;
     margin-bottom: 4px;
-    padding-left: 20px;
+    padding-left: 10px;
 }
 
 .exam-title-stamp {
@@ -1675,7 +1698,7 @@ body.riot-theme .bottom-nav {
     text-align: center;
     color: #3a2e18;
     margin-bottom: 14px;
-    padding-left: 20px;
+    padding-left: 10px;
 }
 
 .exam-progress-dots {
@@ -1683,7 +1706,7 @@ body.riot-theme .bottom-nav {
     justify-content: center;
     gap: 6px;
     margin-bottom: 18px;
-    padding-left: 20px;
+    padding-left: 10px;
 }
 
 .exam-progress-dot {
@@ -1715,10 +1738,10 @@ body.riot-theme .bottom-nav {
 }
 
 .exam-question-text {
-    font-size: 17px;
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 1.4;
     margin-bottom: 20px;
-    padding-left: 20px;
+    padding-left: 10px;
     color: #2a2318;
     display: flex;
     align-items: flex-start;
@@ -1728,22 +1751,21 @@ body.riot-theme .bottom-nav {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
+    width: calc(100% - 10px);
     text-align: left;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.65);
     border: 1px solid #c9b78a;
     border-radius: 8px;
-    padding: 12px 14px;
-    margin: 0 0 10px 20px;
+    padding: 12px;
+    margin: 0 0 10px 10px;
     color: #2a2318;
-    font-size: 15px;
+    font-size: 14px;
     cursor: pointer;
     transition: background 0.15s, transform 0.1s;
-    width: calc(100% - 20px);
 }
 
 .exam-option-btn:hover {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 .exam-option-btn:active {
@@ -1767,7 +1789,7 @@ body.riot-theme .bottom-nav {
 
 .exam-outcome-card {
     text-align: center;
-    padding: 12px 20px 16px;
+    padding: 12px 10px 16px;
 }
 
 .exam-outcome-icon {
@@ -1790,10 +1812,11 @@ body.riot-theme .bottom-nav {
     line-height: 1.4;
 }
 
-/* ---------- попап с информацией о профессии (js/screens/exam.js) ---------- */
+/* ---------- модалка профессий ---------- */
 
 .exam-info-box {
     max-width: 420px;
+    width: 100%;
 }
 
 .exam-info-icon {
@@ -1837,4 +1860,3 @@ body.riot-theme .bottom-nav {
 .exam-info-btn-row .btn-secondary {
     flex: 1;
 }
-
