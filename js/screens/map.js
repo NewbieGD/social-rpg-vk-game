@@ -3,25 +3,26 @@ import { apiFetch } from "../api.js";
 const VIEW_W = 700;
 const VIEW_H = 820;
 
+// 7 основных зданий страны — от них зависят игровые профессии/механики.
 const LANDMARK_COORDS = {
-    "Полицейский участок": { x: 65, y: 300, icon: "👮" },
-    "Больница": { x: 65, y: 440, icon: "🚑" },
-    "Пожарная часть": { x: 65, y: 580, icon: "🚒" },
-    "Школа": { x: 635, y: 300, icon: "🏫" },
-    "Магазин": { x: 635, y: 440, icon: "🛍" },
-    "Офис": { x: 635, y: 580, icon: "🏢" },
+    "Полицейский участок": { x: 65, y: 260, icon: "👮" },
+    "Больница": { x: 65, y: 400, icon: "🚑" },
+    "Пожарная часть": { x: 65, y: 540, icon: "🚒" },
+    "Школа": { x: 65, y: 680, icon: "🏫" },
+    "Завод": { x: 635, y: 400, icon: "🏭" },
+    "Гос. управление": { x: 635, y: 540, icon: "🏛" },
+    "Военная база": { x: 635, y: 680, icon: "🎖" },
 };
 
 const RESIDENCE_ZONE = { x0: 285, x1: 415, y0: 40, y1: 95 };
 const OFFICIAL_HOUSE_ZONE = { x0: 240, x1: 460, y0: 115, y1: 165 };
-const PRIVATE_HOUSE_ZONE = { x0: 175, x1: 330, y0: 260, y1: 620 };
-const DORM_ZONE = { x0: 370, x1: 525, y0: 260, y1: 620 };
-const HOME_FALLBACK_ZONE = { x0: 175, x1: 525, y0: 260, y1: 620 };
+const DORM_ZONE = { x0: 260, x1: 440, y0: 260, y1: 700 };
+const HOME_FALLBACK_ZONE = { x0: 175, x1: 525, y0: 260, y1: 700 };
+const PRIVATE_SECTOR_MARKER = { x: 350, y: 760 };
+
+let movementPoll = null;
 
 function mixHash(seed) {
-    // FNV-1a + финальное перемешивание (как у murmur) — простая function из
-    // прошлой версии давала похожие координаты для похожих ID (1001 и 1002
-    // оказывались почти в одной точке), эта даёт честный разброс.
     let h = 2166136261;
     const s = String(seed);
     for (let i = 0; i < s.length; i++) {
@@ -50,21 +51,45 @@ function coordForLabel(label, movementVkId) {
 }
 
 export async function renderMapScreen(root) {
-    root.innerHTML = `<div class="loading">Загружаем карту…</div>`;
+    // Карта открывается ПОЛНОЭКРАННЫМ оверлеем поверх всего приложения, а не
+    // внутри обычной вкладки — так и было задумано ("на весь экран").
+    const overlay = document.createElement("div");
+    overlay.className = "map-fullscreen-overlay";
+    overlay.innerHTML = `<div class="loading">Загружаем карту…</div>`;
+    document.body.appendChild(overlay);
+    await renderCityMap(overlay);
+}
 
+function stopMapPolling() {
+    if (movementPoll) {
+        clearInterval(movementPoll);
+        movementPoll = null;
+    }
+}
+
+async function renderCityMap(overlay) {
+    stopMapPolling();
     let map, movements;
     try {
         [map, movements] = await Promise.all([apiFetch("/api/map"), apiFetch("/api/map/movements")]);
     } catch (e) {
-        root.innerHTML = `<div class="error">${e.message}</div>`;
+        overlay.innerHTML = `<div class="error">${e.message}</div><button class="btn" id="map-close-err">Закрыть</button>`;
+        overlay.querySelector("#map-close-err").onclick = () => overlay.remove();
         return;
     }
 
-    root.innerHTML = `<div class="title">🗺 Карта города</div>`;
-
-    const svgCard = document.createElement("div");
-    svgCard.className = "card map-svg-card";
-    root.appendChild(svgCard);
+    overlay.innerHTML = `
+        <div class="map-fullscreen-header">
+            <div class="map-fullscreen-title">🗺 Карта города</div>
+            <button class="btn btn-secondary" id="map-close-btn">✕ Закрыть карту</button>
+        </div>
+        <div class="map-svg-wrap" id="map-svg-wrap"></div>
+        <div id="map-detail"></div>
+    `;
+    overlay.querySelector("#map-close-btn").onclick = () => {
+        stopMapPolling();
+        overlay.remove();
+    };
 
     const markers = [];
 
@@ -82,46 +107,51 @@ export async function renderMapScreen(root) {
         markers.push({ ...pos, icon: p.role === "Министр" ? "🏛" : "🏠", label: p.role, person: p, kind: "official" });
     });
 
-    map.private_houses.forEach((p) => {
-        const pos = hashCoord(p.vk_id, PRIVATE_HOUSE_ZONE);
-        markers.push({ ...pos, icon: p.has_mansion ? "🏰" : "🏠", label: p.has_mansion ? "Особняк" : "Дом", person: p, kind: "house" });
-    });
-
     map.dormitories.forEach((dorm) => {
         const pos = hashCoord(`dorm-${dorm.number}`, DORM_ZONE);
         markers.push({ ...pos, icon: "🏢", label: `Общага №${dorm.number}`, dorm, kind: "dorm" });
     });
 
-    svgCard.innerHTML = buildSvg(markers, movements);
-    wireMarkerClicks(root, svgCard, markers);
+    markers.push({
+        ...PRIVATE_SECTOR_MARKER, icon: "🏘", label: "Частный сектор", kind: "private_sector_link",
+        houseCount: map.private_sector.house_count,
+    });
 
-    renderDetailsBelow(root, map);
+    renderSvg(overlay, markers, movements);
+    wireMarkerClicks(overlay, markers);
+
+    // Движения живут всего минуту — опрашиваем каждые 10 секунд, чтобы новые
+    // появлялись и исчезнувшие с сервера сами пропадали с карты.
+    movementPoll = setInterval(async () => {
+        try {
+            const fresh = await apiFetch("/api/map/movements");
+            updateMovements(overlay, fresh);
+        } catch (e) {
+            // не критично — просто оставим карту как есть до следующего опроса
+        }
+    }, 10000);
 }
 
-function buildSvg(markers, movements) {
-    const markerEls = markers.map((m, i) => `
-        <g class="map-marker" data-marker="${i}" transform="translate(${m.x},${m.y})">
-            <circle r="16" class="map-marker-bg" />
-            <text text-anchor="middle" dominant-baseline="central" font-size="16">${m.icon}</text>
-        </g>
-    `).join("");
-
-    const movementEls = movements.map((mv, i) => {
-        const from = coordForLabel(mv.from_label, mv.vk_id);
-        const to = coordForLabel(mv.to_label, mv.vk_id);
-        const pathId = `move-path-${i}`;
+function renderSvg(overlay, markers, movements) {
+    const wrap = overlay.querySelector("#map-svg-wrap");
+    const markerEls = markers.map((m, i) => {
+        const badge = m.kind === "dorm" ? `<text x="12" y="-10" font-size="11" class="map-dorm-count">${m.dorm.residents.length}/20</text>` : "";
+        const houseBadge = m.kind === "private_sector_link" ? `<text x="14" y="-10" font-size="11" class="map-dorm-count">${m.houseCount}🏠</text>` : "";
+        const iconEl = m.kind === "dorm"
+            ? `<image href="assets/dorms/dorm-lights.gif" x="-16" y="-16" width="32" height="32" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><text text-anchor="middle" dominant-baseline="central" font-size="16" style="display:none">${m.icon}</text>`
+            : `<text text-anchor="middle" dominant-baseline="central" font-size="16">${m.icon}</text>`;
         return `
-            <path id="${pathId}" d="M${from.x},${from.y} L${to.x},${to.y}" class="map-route-line" />
-            <circle r="5" class="map-route-dot" data-movement="${i}">
-                <animateMotion dur="3.5s" repeatCount="indefinite">
-                    <mpath href="#${pathId}" />
-                </animateMotion>
-            </circle>
-        `;
+        <g class="map-marker map-marker-${m.kind}" data-marker="${i}" transform="translate(${m.x},${m.y})">
+            <circle r="16" class="map-marker-bg" />
+            ${iconEl}
+            ${badge}${houseBadge}
+            <text text-anchor="middle" y="28" font-size="9" class="map-marker-label">${escapeHtml(m.label)}</text>
+        </g>
+    `;
     }).join("");
 
-    return `
-        <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" class="map-svg">
+    wrap.innerHTML = `
+        <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" class="map-svg" id="map-svg-root">
             <defs>
                 <radialGradient id="map-bg-gradient" cx="30%" cy="20%" r="90%">
                     <stop offset="0%" stop-color="#1a2340" />
@@ -132,67 +162,160 @@ function buildSvg(markers, movements) {
             <rect x="0" y="0" width="${VIEW_W}" height="${VIEW_H}" class="map-bg" />
             <rect x="210" y="25" width="280" height="155" class="map-zone" />
             <text x="350" y="18" text-anchor="middle" class="map-zone-label">Центр власти</text>
-            <rect x="${PRIVATE_HOUSE_ZONE.x0 - 10}" y="${PRIVATE_HOUSE_ZONE.y0 - 10}" width="${PRIVATE_HOUSE_ZONE.x1 - PRIVATE_HOUSE_ZONE.x0 + 20}" height="${PRIVATE_HOUSE_ZONE.y1 - PRIVATE_HOUSE_ZONE.y0 + 20}" class="map-zone" />
-            <text x="${(PRIVATE_HOUSE_ZONE.x0 + PRIVATE_HOUSE_ZONE.x1) / 2}" y="${PRIVATE_HOUSE_ZONE.y0 - 16}" text-anchor="middle" class="map-zone-label">Частные дома</text>
             <rect x="${DORM_ZONE.x0 - 10}" y="${DORM_ZONE.y0 - 10}" width="${DORM_ZONE.x1 - DORM_ZONE.x0 + 20}" height="${DORM_ZONE.y1 - DORM_ZONE.y0 + 20}" class="map-zone" />
             <text x="${(DORM_ZONE.x0 + DORM_ZONE.x1) / 2}" y="${DORM_ZONE.y0 - 16}" text-anchor="middle" class="map-zone-label">Общежития</text>
-            ${movementEls}
+            <g id="map-movements-group"></g>
             ${markerEls}
         </svg>
-        <div class="map-legend">🔵 мигающая точка — кто-то в пути прямо сейчас (такси/машина/вызов службы)</div>
+        <div class="map-legend">Нажимай на здание/дом/общагу — узнать подробности. Точки в пути пропадают через минуту.</div>
     `;
+    updateMovements(overlay, movements);
 }
 
-function wireMarkerClicks(root, svgCard, markers) {
-    const groups = svgCard.querySelectorAll(".map-marker");
+function updateMovements(overlay, movements) {
+    const svg = overlay.querySelector("#map-svg-root");
+    if (!svg) return;
+    const group = overlay.querySelector("#map-movements-group");
+    if (!group) return;
+    group.innerHTML = movements.map((mv, i) => {
+        const from = coordForLabel(mv.from_label, mv.vk_id);
+        const to = coordForLabel(mv.to_label, mv.vk_id);
+        const pathId = `move-path-${i}`;
+        return `
+            <path id="${pathId}" d="M${from.x},${from.y} L${to.x},${to.y}" class="map-route-line" />
+            <g class="map-moving-icon" data-movement="${i}">
+                <animateMotion dur="4s" repeatCount="indefinite">
+                    <mpath href="#${pathId}" />
+                </animateMotion>
+                <circle r="13" class="map-moving-bg" />
+                <text text-anchor="middle" dominant-baseline="central" font-size="14">${mv.icon}</text>
+                <circle r="7" cy="-18" class="map-moving-info-dot" />
+                <text x="0" y="-18" text-anchor="middle" dominant-baseline="central" font-size="9" class="map-moving-info-i">i</text>
+            </g>
+        `;
+    }).join("");
+
+    group.querySelectorAll(".map-moving-icon").forEach((g) => {
+        const idx = Number(g.getAttribute("data-movement"));
+        const mv = movements[idx];
+        g.style.cursor = "pointer";
+        g.addEventListener("click", () => showMovementInfo(overlay, mv));
+    });
+}
+
+function showMovementInfo(overlay, mv) {
+    const detail = overlay.querySelector("#map-detail");
+    detail.innerHTML = "";
+    const card = document.createElement("div");
+    card.className = "card map-detail-card";
+    card.innerHTML = `<div class="subtitle">${mv.icon} ${escapeHtml(mv.message)}</div>`;
+    const btn = document.createElement("button");
+    btn.className = "btn btn-secondary";
+    btn.textContent = "👤 Открыть профиль";
+    btn.onclick = () => showPublicProfile(overlay, mv.vk_id);
+    card.appendChild(btn);
+    detail.appendChild(card);
+}
+
+function wireMarkerClicks(overlay, markers) {
+    const groups = overlay.querySelectorAll(".map-marker");
     groups.forEach((g) => {
         const idx = Number(g.getAttribute("data-marker"));
         const m = markers[idx];
         g.style.cursor = "pointer";
-        g.addEventListener("click", () => {
-            if (m.person) showPublicProfile(root, m.person.vk_id);
-            else if (m.dorm) showDormPeople(root, m.dorm);
+        g.addEventListener("click", async () => {
+            if (m.kind === "private_sector_link") await renderPrivateSectorMap(overlay);
+            else if (m.person) await showPublicProfile(overlay, m.person.vk_id);
+            else if (m.dorm) await showDormPeople(overlay, m.dorm);
         });
     });
 }
 
-function renderDetailsBelow(root, map) {
-    const buildingsSection = document.createElement("div");
-    buildingsSection.className = "card";
-    buildingsSection.innerHTML = `<div class="subtitle">Нажимай на точки на карте — здание/дом/общагу, чтобы узнать подробности.</div>`;
-    root.appendChild(buildingsSection);
-
-    const detail = document.createElement("div");
-    detail.id = "map-detail";
-    root.appendChild(detail);
-}
-
-async function showDormPeople(root, dorm) {
-    const detail = root.querySelector("#map-detail");
+async function showDormPeople(overlay, dorm) {
+    const detail = overlay.querySelector("#map-detail");
     detail.innerHTML = "";
     const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<div class="subtitle">Общага №${dorm.number} — жильцы:</div>`;
+    card.className = "card map-detail-card";
+    card.innerHTML = `<div class="subtitle">Общага №${dorm.number} — жильцы (${dorm.residents.length}/20):</div>`;
     dorm.residents.forEach((p) => {
         const row = document.createElement("div");
         row.className = "map-person";
         const name = p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id;
         row.textContent = `👤 ${name} — ${p.display_profession}`;
-        row.onclick = () => showPublicProfile(root, p.vk_id);
+        row.onclick = () => showPublicProfile(overlay, p.vk_id);
         card.appendChild(row);
     });
     detail.appendChild(card);
-    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-async function showPublicProfile(root, vkId) {
-    const detail = root.querySelector("#map-detail");
+async function renderPrivateSectorMap(overlay) {
+    stopMapPolling();
+    overlay.innerHTML = `<div class="loading">Загружаем частный сектор…</div>`;
+    let data;
+    try {
+        data = await apiFetch("/api/map/private_sector");
+    } catch (e) {
+        overlay.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    overlay.innerHTML = `
+        <div class="map-fullscreen-header">
+            <div class="map-fullscreen-title">🏘 Частный сектор</div>
+            <button class="btn btn-secondary" id="map-back-btn">← Назад на карту города</button>
+        </div>
+        <div class="map-svg-wrap" id="map-svg-wrap"></div>
+        <div id="map-detail"></div>
+    `;
+    overlay.querySelector("#map-back-btn").onclick = () => renderCityMap(overlay);
+
+    const cols = Math.max(1, Math.ceil(Math.sqrt(data.houses.length || 1)));
+    const cellW = VIEW_W / (cols + 1);
+    const cellH = 110;
+    const markers = data.houses.map((h, i) => {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        return {
+            x: cellW * (col + 1), y: 70 + row * cellH, icon: h.house_skin ? null : "🏠",
+            houseSkin: h.house_skin, label: h.username ? "@" + h.username : "ID " + h.vk_id,
+            person: h, kind: "private_house",
+        };
+    });
+
+    const wrap = overlay.querySelector("#map-svg-wrap");
+    const viewH = Math.max(VIEW_H, 140 + Math.ceil(data.houses.length / cols) * cellH);
+    const markerEls = markers.map((m, i) => `
+        <g class="map-marker map-marker-private_house" data-marker="${i}" transform="translate(${m.x},${m.y})">
+            ${m.houseSkin
+                ? `<image href="assets/houses/${m.houseSkin}.png" x="-24" y="-24" width="48" height="48" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><text text-anchor="middle" dominant-baseline="central" font-size="22" style="display:none">🏠</text>`
+                : `<text text-anchor="middle" dominant-baseline="central" font-size="22">🏠</text>`}
+            <text text-anchor="middle" y="32" font-size="9" class="map-marker-label">${escapeHtml(m.label)}</text>
+        </g>
+    `).join("");
+
+    wrap.innerHTML = `
+        <svg viewBox="0 0 ${VIEW_W} ${viewH}" class="map-svg" id="map-svg-root">
+            <rect x="0" y="0" width="${VIEW_W}" height="${viewH}" class="map-bg" />
+            ${markerEls}
+        </svg>
+        <div class="map-legend">${data.houses.length ? "Нажимай на дом, чтобы узнать, кто владелец." : "Пока никто не купил себе дом."}</div>
+    `;
+
+    overlay.querySelectorAll(".map-marker").forEach((g) => {
+        const idx = Number(g.getAttribute("data-marker"));
+        const m = markers[idx];
+        g.style.cursor = "pointer";
+        g.addEventListener("click", () => showPublicProfile(overlay, m.person.vk_id));
+    });
+}
+
+async function showPublicProfile(overlay, vkId) {
+    const detail = overlay.querySelector("#map-detail");
     detail.innerHTML = "";
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "card map-detail-card";
     card.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
     detail.appendChild(card);
-    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
     try {
         const p = await apiFetch(`/api/map/player/${vkId}`);

@@ -1,5 +1,5 @@
 import { apiFetch } from "../api.js";
-import { playMessageSound } from "../fx.js";
+import { playMessageSound, playSuccessSound, playFailSound, burstConfetti } from "../fx.js";
 import { renderOtherProfile } from "./profile.js";
 
 const POLL_INTERVAL_MS = 3000;
@@ -286,6 +286,14 @@ function appendMessage(container, m, myVkId) {
     if (m.is_system) {
         el.className = "chat-msg chat-msg-system";
         el.textContent = m.text;
+        if (m.text.includes("Президент") && m.text.includes("вошёл в чат")) {
+            el.classList.add("chat-msg-president-enter");
+            playSuccessSound();
+            burstConfetti(document.body, 40);
+        } else if (m.text.includes("Президент") && m.text.includes("покинул чат")) {
+            el.classList.add("chat-msg-president-leave");
+            playFailSound();
+        }
     } else {
         const isOwn = myVkId !== null && m.sender_vk_id === myVkId;
         el.className = isOwn ? "chat-msg chat-msg-own" : "chat-msg";

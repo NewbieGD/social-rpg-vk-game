@@ -22,7 +22,11 @@ class ApiError extends Error {
         // Достаём читаемое сообщение из каждого объекта отдельно.
         let message = detail;
         if (Array.isArray(detail)) {
-            message = detail.map((d) => (d && typeof d === "object" ? d.msg || JSON.stringify(d) : String(d))).join("; ");
+            message = detail.map((d) => {
+                if (!d || typeof d !== "object") return String(d);
+                const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : null;
+                return field ? `${field}: ${d.msg}` : d.msg || JSON.stringify(d);
+            }).join("; ");
         } else if (detail && typeof detail === "object") {
             message = detail.msg || JSON.stringify(detail);
         }

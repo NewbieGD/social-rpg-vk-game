@@ -147,6 +147,10 @@ export async function renderProfileScreen(root) {
             <div class="profile-layout-v2">
                 <div class="profile-left-col">
                     <div class="profile-avatar-col" id="profile-avatar-col"><div class="profile-avatar profile-avatar-placeholder${avatarFrameClass}">👤</div></div>
+                    <div class="profile-assets-row">
+                        <button class="profile-asset-btn" id="profile-house-btn" title="Твой дом">${user.house_skin ? `<img src="assets/houses/${user.house_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.house_skin ? "display:none" : ""}">${user.has_house ? "🏠" : "🏗"}</span></button>
+                        <button class="profile-asset-btn" id="profile-car-btn" title="Твоя машина">${user.car_skin ? `<img src="assets/cars/${user.car_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.car_skin ? "display:none" : ""}">${user.has_car ? "🚗" : "🚫"}</span></button>
+                    </div>
                     <div class="profile-main-col">${mainLines.join("")}</div>
                 </div>
                 <div class="profile-right-col" id="profile-right-col"></div>
@@ -169,6 +173,9 @@ export async function renderProfileScreen(root) {
     }
 
     // Фото из VK подгружаем отдельно, не блокируя показ самого профиля —
+    root.querySelector("#profile-house-btn").onclick = () => showAssetPopup("🏠 Твой дом", user.has_house, user.house_skin, "houses", "Дом ещё не приобретён — купи «Квартиру» в Магазине.");
+    root.querySelector("#profile-car-btn").onclick = () => showAssetPopup("🚗 Твоя машина", user.has_car, user.car_skin, "cars", "Машина ещё не приобретена — купи её в Магазине.");
+
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
     // Bridge зависал (случается вне настоящего приложения VK), весь экран
     // виснул на "Загружаем...". Теперь профиль показывается сразу с заглушкой,
@@ -375,6 +382,38 @@ async function showOkoPopup() {
     } catch (e) {
         content.innerHTML = `<div class="error">${e.message}</div>`;
     }
+}
+
+const ASSET_SKIN_TITLES = {
+    "house-mansion": "Особняк", "house-modern": "Современный дом", "house-castle": "Замок",
+    "car-sport": "Спорткар", "car-lux": "Лимузин",
+};
+
+function showAssetPopup(title, owned, skin, folder, emptyText) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    if (!owned) {
+        content.innerHTML = `<div class="subtitle">${title}</div><div class="profile-dim">${emptyText}</div>`;
+    } else {
+        const skinTitle = skin ? ASSET_SKIN_TITLES[skin] || skin : "Обычный вид (внешний вид не куплен)";
+        content.innerHTML = `
+            <div class="subtitle">${title}</div>
+            ${skin ? `<img src="assets/${folder}/${skin}.png" class="profile-asset-preview" alt="" onerror="this.style.display='none'">` : ""}
+            <div class="profile-row">Текущий внешний вид: <b>${skinTitle}</b></div>
+            ${!skin ? `<div class="profile-dim">Хочешь выделиться? Купи внешний вид в Косметике (Магазин).</div>` : ""}
+        `;
+    }
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
 }
 
 async function showAccountingPopup() {
