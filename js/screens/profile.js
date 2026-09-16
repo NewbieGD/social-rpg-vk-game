@@ -40,7 +40,10 @@ export async function renderProfileScreen(root) {
     const isPresident = !!user.is_president;
 
     if (isPresident) {
-        mainLines.push(`<div class="president-top-banner">🎖 ПРЕЗИДЕНТ СТРАНЫ</div>`);
+        mainLines.push(`<div class="president-top-banner">🎖 ПРЕЗИДЕНТ СТРАНЫ${user.impeachment_pending ? " ⚠️ (идёт голосование за импичмент)" : ""}</div>`);
+    }
+    if (user.awaiting_trial) {
+        mainLines.push(`<div class="president-top-banner" style="background:linear-gradient(90deg,#4a1a1a,#2a1010);color:#ff9eb5">⚖️ БЫВШИЙ ПРЕЗИДЕНТ — ЖДЁТ СУДА</div>`);
     }
     if (user.times_president > 1) {
         mainLines.push(`<div class="profile-row profile-dim">${"⭐".repeat(user.times_president)} Был(а) президентом ${user.times_president} раз(а)</div>`);
@@ -138,7 +141,7 @@ export async function renderProfileScreen(root) {
     const avatarFrameClass = isPresident ? " profile-avatar-president" : hasNeonFrame ? " profile-avatar-neon" : "";
 
     const buffIcons = (user.buffs || []).map((b, i) =>
-        `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}" style="background-image:url('assets/icons/${b.code}.png')">${b.icon}</button>`
+        `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}"><img src="assets/icons/${b.code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${b.icon}</span></button>`
     ).join("");
 
     root.innerHTML = `
@@ -331,7 +334,8 @@ function showNewBuffsPopupQueue(buffs) {
     overlay.className = "chest-overlay";
     overlay.innerHTML = `
         <div class="chest-overlay-box">
-            <div class="chest-overlay-icon">${first.icon}</div>
+            <div class="chest-overlay-icon"><img src="assets/icons/${first.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+            <span style="display:none">${first.icon}</span></div>
             <div class="profile-dim" style="margin-bottom:4px">${first.positive ? "✨ Новый баф!" : "⚠️ Новый дебаф!"}</div>
             <div class="chest-overlay-title" style="color:${first.positive ? "#7ee787" : "#ff9eb5"};font-size:16px;font-weight:700">${escapeHtml(first.title)}</div>
             <div class="profile-dim" style="margin:8px 0 16px">${escapeHtml(first.description)}</div>
@@ -596,7 +600,8 @@ function showBuffPopup(buff) {
     overlay.className = "chest-overlay";
     overlay.innerHTML = `
         <div class="chest-overlay-box">
-            <div class="chest-overlay-icon">${buff.icon}</div>
+            <div class="chest-overlay-icon"><img src="assets/icons/${buff.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+            <span style="display:none">${buff.icon}</span></div>
             <div class="chest-overlay-title" style="color:${buff.positive ? "#7ee787" : "#ff9eb5"};font-size:16px;font-weight:700">${escapeHtml(buff.title)}</div>
             <div class="profile-dim" style="margin:8px 0 16px">${escapeHtml(buff.description)}</div>
             <button class="btn" id="buff-close-btn">Закрыть</button>

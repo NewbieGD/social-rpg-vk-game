@@ -1438,6 +1438,12 @@ body.riot-theme .bottom-nav {
     margin-bottom: 8px;
 }
 
+.chest-overlay-icon-img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+}
+
 .chest-overlay-title {
     font-family: "Rajdhani", sans-serif;
     font-size: 14px;
@@ -2172,4 +2178,17 @@ body.riot-theme .bottom-nav {
     object-fit: cover;
     margin: 8px auto;
     border-radius: 10px;
+}
+
+/* ---------- общий игровой попап-уведомление (переиспользуется везде) ---------- */
+
+.gov-popup-box {
+    text-align: center;
+}
+
+.gov-popup-title {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: #d4af37;
 }

@@ -1,5 +1,6 @@
 import { apiFetch } from "../api.js";
 import { burstConfetti, playSuccessSound, shakeElement } from "../fx.js";
+import { showGameStylePopup } from "../gamePopup.js";
 
 export async function renderStateScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -104,7 +105,7 @@ function renderElections(root, elections) {
             btn.className = "gov-vote-btn";
             btn.innerHTML = `<span>${escapeHtml(choice.label || nameOf(choice))}</span> — <span class="gov-vote-count">${choice.votes} 🗳</span>`;
             const value = choice.value || String(choice.vk_id);
-            btn.onclick = () => castVote(root, e.id, value, btn);
+            btn.onclick = () => castVote(root, e.id, value, btn, wrap);
             row.appendChild(btn);
 
             if (choice.voters && choice.voters.length > 0) {
@@ -138,19 +139,20 @@ function electionLabel(type) {
     return ELECTION_LABELS[type] || type;
 }
 
-async function castVote(root, electionId, choice, btn) {
-    const resultEl = root.querySelector("#state-result");
-    resultEl.innerHTML = `<div class="loading">Голосуем…</div>`;
+async function castVote(root, electionId, choice, btn, wrap) {
+    if (btn) btn.disabled = true;
     try {
         await apiFetch(`/api/elections/${electionId}/vote`, { method: "POST", body: { choice } });
-        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Голос учтён</div>`;
-        if (btn) {
-            btn.classList.add("gov-vote-btn-voted", "gov-vote-flash");
+        if (wrap) {
+            wrap.querySelectorAll(".gov-vote-btn").forEach((b) => { b.disabled = true; b.style.opacity = "0.6"; });
         }
+        if (btn) btn.classList.add("gov-vote-btn-voted", "gov-vote-flash");
         playSuccessSound();
         burstConfetti(root.querySelector(".gov-hall-card") || root, 24);
+        showGameStylePopup("✅ Голос учтён!", `Ты проголосовал(а): «${escapeHtml(btn ? btn.textContent : choice)}». Изменить голос уже нельзя.`);
     } catch (e) {
-        resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+        if (btn) btn.disabled = false;
+        showGameStylePopup("❌ Не получилось", e.message);
     }
 }
 
