@@ -2410,9 +2410,9 @@ body.fire-event-theme .bottom-nav {
 
 .event-ember {
     position: absolute;
-    width: 32px;
-    height: 32px;
-    font-size: 26px;
+    width: 44px;
+    height: 44px;
+    font-size: 30px;
     display: flex;
     align-items: center;
     justify-content: center;

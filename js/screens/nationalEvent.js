@@ -63,6 +63,7 @@ function renderShowcase(root, status) {
 
 const GAME_WIDTH = 320;
 const GAME_HEIGHT = 420;
+const EMBER_SIZE = 44;
 const SPAWN_INTERVAL_MS = 700;
 const FALL_DURATION_MS = 3200;
 
@@ -87,9 +88,9 @@ function startFireMinigame(root, status) {
         if (gameOver) return;
         const ember = document.createElement("div");
         ember.className = "event-ember";
-        const x = Math.random() * (GAME_WIDTH - 32);
+        const x = Math.random() * (GAME_WIDTH - EMBER_SIZE);
         ember.style.left = `${x}px`;
-        ember.style.top = "-32px";
+        ember.style.top = `${-EMBER_SIZE}px`;
         ember.textContent = "🔥";
         field.appendChild(ember);
         embers.push(ember);
@@ -105,17 +106,16 @@ function startFireMinigame(root, status) {
                 }
                 return;
             }
-            ember.style.top = `${-32 + progress * (GAME_HEIGHT + 32)}px`;
+            ember.style.top = `${-EMBER_SIZE + progress * (GAME_HEIGHT + EMBER_SIZE)}px`;
         }, 30);
 
         ember.onclick = () => {
             if (ember._extinguished || gameOver) return;
             ember._extinguished = true;
             clearInterval(ember._fallInterval);
-            ember.classList.add("event-ember-hit");
             score += 1;
             scoreEl.textContent = String(score);
-            setTimeout(() => ember.remove(), 200);
+            ember.remove();
         };
     }
 
