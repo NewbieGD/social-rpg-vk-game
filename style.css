@@ -520,8 +520,11 @@ body {
 }
 
 .map-zone-label {
-    fill: #6c7797;
-    font-size: 9px;
+    fill: #d4af37;
+    font-size: 11px;
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 @keyframes map-marker-pulse {
@@ -1137,6 +1140,19 @@ body {
 
 .market-stall-item {
     border-color: #6b4a2a;
+}
+
+.market-section-card {
+    background: linear-gradient(160deg, #241d14, #1a150e);
+    border: 1px solid #6b4a2a;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.market-section-card .subtitle {
+    color: #f0d9a8;
 }
 
 /* ---------- косметика: наглядный превью каждого эффекта ---------- */
@@ -2085,7 +2101,10 @@ body.riot-theme .bottom-nav {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 500;
-    background: #0a0f1e;
+    background:
+        radial-gradient(circle at 20% 10%, rgba(108, 92, 231, 0.10), transparent 50%),
+        radial-gradient(circle at 80% 90%, rgba(212, 175, 55, 0.06), transparent 50%),
+        #0a0f1e;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -2096,8 +2115,9 @@ body.riot-theme .bottom-nav {
     justify-content: space-between;
     align-items: center;
     padding: 14px 16px;
-    background: #12172b;
-    border-bottom: 1px solid #232d47;
+    background: linear-gradient(180deg, #171d33, #12172b);
+    border-bottom: 1px solid #3d3520;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     flex-shrink: 0;
 }
 
@@ -2105,6 +2125,7 @@ body.riot-theme .bottom-nav {
     font-family: "Rajdhani", sans-serif;
     font-weight: 800;
     font-size: 18px;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
 }
 
 .map-svg-wrap {
@@ -2191,4 +2212,65 @@ body.riot-theme .bottom-nav {
     font-weight: 800;
     font-size: 18px;
     color: #d4af37;
+}
+
+.map-marker-landmark .map-marker-bg {
+    stroke: #d4af37;
+    fill: #201d10;
+}
+
+.map-marker-residence .map-marker-bg {
+    stroke: #ffd873;
+    fill: #2a2410;
+    animation: map-marker-pulse 2s ease-in-out infinite;
+}
+
+.map-marker-private_sector_link .map-marker-bg {
+    stroke: #7ee787;
+}
+
+.map-marker-label {
+    font-family: "Rajdhani", sans-serif;
+}
+
+/* ---------- Завод: инструменты (js/screens/work.js) ---------- */
+
+.zavod-tools-row {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.zavod-tool-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 84px;
+    padding: 14px 8px;
+    background: linear-gradient(160deg, #232838, #1a1e2c);
+    border: 1px solid #3a4568;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+}
+
+.zavod-tool-btn:hover {
+    border-color: #d4af37;
+}
+
+.zavod-tool-btn:active {
+    transform: scale(0.96);
+}
+
+.zavod-tool-icon {
+    font-size: 28px;
+}
+
+.zavod-tool-label {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: #c9d0e0;
 }

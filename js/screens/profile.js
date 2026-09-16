@@ -35,6 +35,17 @@ export async function renderProfileScreen(root) {
         return;
     }
 
+    // Если персонажа сбросили (например, приговор "Казнить" в суде над
+    // президентом) прямо во время сессии — сервер уже перевёл stage в
+    // 'school', но приложение это узнаёт только при полном перезапуске
+    // (app.js проверяет stage лишь один раз при входе). Перезагружаем
+    // страницу — она сама корректно откроет школьный экзамен заново.
+    const RESTART_REQUIRED_STAGES = ["school", "pdd_test", "choosing", "choosing_free", "criminal_offer"];
+    if (RESTART_REQUIRED_STAGES.includes(user.stage)) {
+        window.location.reload();
+        return;
+    }
+
     const mainLines = [];
     const cosmetics = user.cosmetics || [];
     const isPresident = !!user.is_president;

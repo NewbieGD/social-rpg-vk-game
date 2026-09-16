@@ -1,5 +1,6 @@
 import { apiFetch } from "../api.js";
 import { burstConfetti } from "../fx.js";
+import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 
 const REMOTE_PROFESSIONS = ["it", "law"];
 
@@ -113,10 +114,23 @@ function appendZavodCard(root, body, commutedToday) {
     const card = document.createElement("div");
     card.className = "card";
     if (commutedToday) {
-        card.innerHTML = `<div class="subtitle">Завод — выбери, что производить.</div>`;
-        addBtn(card, "🏭 Выбрать продукцию", () => renderProductPicker(root));
+        card.innerHTML = `
+            <div class="subtitle">🏭 Завод</div>
+            <div class="zavod-tools-row">
+                <button class="zavod-tool-btn" id="zavod-wrench-btn" title="Произвести товар">
+                    <span class="zavod-tool-icon">🔧</span>
+                    <span class="zavod-tool-label">Произвести</span>
+                </button>
+                <button class="zavod-tool-btn" id="zavod-box-btn" title="Голосование за товар дня">
+                    <span class="zavod-tool-icon">📦</span>
+                    <span class="zavod-tool-label">Голосование</span>
+                </button>
+            </div>
+        `;
+        card.querySelector("#zavod-wrench-btn").onclick = () => showProduceProductPopup();
+        card.querySelector("#zavod-box-btn").onclick = () => showFactoryVotePopup();
     } else {
-        card.innerHTML = `<div class="subtitle profile-dim">Сначала доедь на завод (кнопка выше) — тогда откроется выбор продукции.</div>`;
+        card.innerHTML = `<div class="subtitle profile-dim">Сначала доедь на завод (кнопка выше) — тогда откроются инструменты завода.</div>`;
     }
     body.appendChild(card);
 }
@@ -307,9 +321,10 @@ async function doRemoteWork(root, resultEl) {
     }
 }
 
-async function renderProductPicker(root) {
-    const body = root.querySelector("#work-body");
-    body.innerHTML = `<div class="loading">Загружаем список продукции…</div>`;
+async function showProduceProductPopup() {
+    const { content } = showGamePopupWithContent("🔧 Произвести товар", (c) => {
+        c.innerHTML = `<div class="loading">Загружаем…</div>`;
+    });
 
     let products, status;
     try {
@@ -318,58 +333,61 @@ async function renderProductPicker(root) {
             apiFetch("/api/work/production_status"),
         ]);
     } catch (e) {
-        body.innerHTML = `<div class="error">${e.message}</div>`;
+        content.innerHTML = `<div class="error">${e.message}</div>`;
         return;
     }
 
-    const statusCard = document.createElement("div");
-    statusCard.className = "card";
+    let statusHtml;
     if (status.daily_limit_reached) {
-        statusCard.innerHTML = `<div class="profile-row" style="color:#ffb454">📦 Дневной лимит производства исчерпан (8 из 8). Возвращайся завтра.</div>`;
+        statusHtml = `<div class="profile-row" style="color:#ffb454">📦 Дневной лимит производства исчерпан (8 из 8). Возвращайся завтра.</div>`;
     } else if (status.last_product) {
         const dailyText = `<div class="profile-dim">Сегодня произведено: ${status.produced_today}/8</div>`;
-        statusCard.innerHTML = (status.ready_now
+        statusHtml = (status.ready_now
             ? `<div class="profile-row" style="color:#7ee787">✅ Готово к новому производству (последним был: ${escapeHtmlWork(status.last_product)})</div>`
             : `<div class="profile-dim">Недавно создано: ${escapeHtmlWork(status.last_product)}. Следующее производство доступно через ${formatMinutes(status.seconds_left)}.</div>`
         ) + dailyText;
     } else {
-        statusCard.innerHTML = `<div class="profile-dim">Ты ещё ничего не производил(а) — выбери товар ниже. Максимум 8 раз в сутки, не чаще раза в 2 часа.</div>`;
+        statusHtml = `<div class="profile-dim">Ты ещё ничего не производил(а) — выбери товар ниже. Максимум 8 раз в сутки, не чаще раза в 2 часа.</div>`;
     }
-    body.appendChild(statusCard);
 
     const canProduceNow = status.ready_now && !status.daily_limit_reached;
+    content.innerHTML = `${statusHtml}<div class="subtitle" style="margin-top:10px">Нажми на товар — он сразу уйдёт на склад магазина (без курьера):</div><div id="product-list"></div>`;
 
-    const pickCard = document.createElement("div");
-    pickCard.className = "card";
-    pickCard.innerHTML = `<div class="subtitle">Нажми на товар — он сразу уйдёт на склад магазина (без курьера):</div><div id="product-list"></div><div id="product-result"></div>`;
-    body.appendChild(pickCard);
-
-    const list = pickCard.querySelector("#product-list");
+    const list = content.querySelector("#product-list");
     products.forEach((p) => {
         const btn = document.createElement("button");
-        btn.className = "option-btn";
+        btn.className = "gov-vote-btn";
         btn.textContent = p.name;
         if (!canProduceNow) btn.disabled = true;
         btn.onclick = async () => {
-            const resultEl = pickCard.querySelector("#product-result");
-            resultEl.innerHTML = `<div class="loading">Создаём…</div>`;
+            btn.disabled = true;
             try {
                 const result = await apiFetch("/api/work/choose_product", { method: "POST", body: { code: p.code } });
-                resultEl.innerHTML = `
-                    <div class="profile-row" style="color:#7ee787">✅ Произведено: ${result.product} (+${result.units} шт на склад магазина) — начислено +${result.pay.toFixed(0)}₭${result.gained_rating ? " и +1 к рейтингу!" : ""}</div>
-                    <div class="profile-dim">Сегодня произведено: ${result.produced_today}/${result.daily_limit}. Следующее производство — через ${formatMinutes(result.next_available_in_seconds)}.</div>
-                `;
+                showGameStylePopup(
+                    "✅ Произведено!",
+                    `${escapeHtmlWork(result.product)} (+${result.units} шт на склад магазина) — начислено +${result.pay.toFixed(0)}₭${result.gained_rating ? " и +1 к рейтингу!" : ""}.<br>Сегодня произведено: ${result.produced_today}/${result.daily_limit}. Следующее производство — через ${formatMinutes(result.next_available_in_seconds)}.`,
+                );
             } catch (e) {
-                resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+                btn.disabled = false;
+                showGameStylePopup("❌ Не получилось", e.message);
             }
         };
         list.appendChild(btn);
     });
+}
 
-    const voteCard = document.createElement("div");
-    voteCard.className = "card";
-    body.appendChild(voteCard);
-    await renderFactoryVoting(root, voteCard, products);
+async function showFactoryVotePopup() {
+    let products;
+    try {
+        products = await apiFetch("/api/work/products");
+    } catch (e) {
+        showGameStylePopup("❌ Не получилось", e.message);
+        return;
+    }
+    const { content } = showGamePopupWithContent("📦 Голосование за товар дня", (c) => {
+        c.innerHTML = `<div class="loading">Загружаем…</div>`;
+    });
+    await renderFactoryVoting(content, products);
 }
 
 function formatMinutes(seconds) {
@@ -384,19 +402,18 @@ function escapeHtmlWork(str) {
     return div.innerHTML;
 }
 
-async function renderFactoryVoting(root, voteCard, products) {
-    voteCard.innerHTML = `
-        <div class="subtitle">🗳 Голосование Завода за приоритетный товар дня (победитель получает бонус к складу и сразу поступает в магазин; голос можно отдать только один раз за голосование — сменить нельзя. Если голосуешь один, твой голос сразу и есть 100%)</div>
+async function renderFactoryVoting(content, products) {
+    content.innerHTML = `
+        <div class="profile-dim" style="margin-bottom:8px">Победитель получает бонус к складу и сразу поступает в магазин. Голос можно отдать только один раз за голосование — сменить нельзя. Если голосуешь один, твой голос сразу и есть 100%.</div>
         <div id="vote-timer" class="profile-dim"></div>
-        <div id="vote-standings" class="profile-dim">Загружаем…</div>
+        <div id="vote-standings" class="profile-dim"></div>
         <div id="vote-buttons"></div>
-        <div id="vote-result"></div>
     `;
 
     try {
         const votes = await apiFetch("/api/work/factory_votes");
-        voteCard.querySelector("#vote-timer").textContent = `⏳ До объявления результатов: ${formatMinutes(votes.seconds_until_results)}`;
-        const standingsEl = voteCard.querySelector("#vote-standings");
+        content.querySelector("#vote-timer").textContent = `⏳ До объявления результатов: ${formatMinutes(votes.seconds_until_results)}`;
+        const standingsEl = content.querySelector("#vote-standings");
         if (votes.standings.length === 0) {
             standingsEl.textContent = "Сегодня ещё никто не голосовал.";
         } else {
@@ -405,23 +422,23 @@ async function renderFactoryVoting(root, voteCard, products) {
                 .join("<br>");
         }
     } catch (e) {
-        voteCard.querySelector("#vote-standings").innerHTML = `<span class="error">${e.message}</span>`;
+        content.querySelector("#vote-standings").innerHTML = `<span class="error">${e.message}</span>`;
     }
 
-    const btnContainer = voteCard.querySelector("#vote-buttons");
+    const btnContainer = content.querySelector("#vote-buttons");
     products.forEach((p) => {
         const btn = document.createElement("button");
-        btn.className = "option-btn";
+        btn.className = "gov-vote-btn";
         btn.textContent = `Голосовать: ${p.name}`;
         btn.onclick = async () => {
-            const resultEl = voteCard.querySelector("#vote-result");
-            resultEl.innerHTML = `<div class="loading">Голосуем…</div>`;
+            btn.disabled = true;
             try {
                 await apiFetch("/api/work/factory_vote", { method: "POST", body: { code: p.code } });
-                resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Голос учтён</div>`;
-                await renderFactoryVoting(root, voteCard, products);
+                showGameStylePopup("✅ Голос учтён!", `Ты проголосовал(а) за «${escapeHtmlWork(p.name)}».`);
+                await renderFactoryVoting(content, products);
             } catch (e) {
-                resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+                btn.disabled = false;
+                showGameStylePopup("❌ Не получилось", e.message);
             }
         };
         btnContainer.appendChild(btn);

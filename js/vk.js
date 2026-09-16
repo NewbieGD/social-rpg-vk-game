@@ -36,6 +36,20 @@ export async function getVkUserInfo() {
     }
 }
 
+export async function requestVkNotifications() {
+    if (!window.vkBridge) return false;
+    // Так же, как и другие вызовы VK Bridge — вне настоящего VK может зависнуть,
+    // не ответив ни успехом, ни ошибкой, поэтому тоже ограничиваем ожидание.
+    const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
+    try {
+        const result = await Promise.race([window.vkBridge.send("VKWebAppAllowNotifications"), timeout]);
+        return !!(result && result.result);
+    } catch (e) {
+        // Игрок отказал, либо мы вне настоящего VK — не критично.
+        return false;
+    }
+}
+
 export async function initVkBridge() {
     if (!window.vkBridge) {
         return;

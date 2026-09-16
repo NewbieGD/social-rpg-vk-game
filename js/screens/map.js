@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { showGamePopupWithContent } from "../gamePopup.js";
 
 const VIEW_W = 700;
 const VIEW_H = 820;
@@ -84,7 +85,6 @@ async function renderCityMap(overlay) {
             <button class="btn btn-secondary" id="map-close-btn">✕ Закрыть карту</button>
         </div>
         <div class="map-svg-wrap" id="map-svg-wrap"></div>
-        <div id="map-detail"></div>
     `;
     overlay.querySelector("#map-close-btn").onclick = () => {
         stopMapPolling();
@@ -204,17 +204,15 @@ function updateMovements(overlay, movements) {
 }
 
 function showMovementInfo(overlay, mv) {
-    const detail = overlay.querySelector("#map-detail");
-    detail.innerHTML = "";
-    const card = document.createElement("div");
-    card.className = "card map-detail-card";
-    card.innerHTML = `<div class="subtitle">${mv.icon} ${escapeHtml(mv.message)}</div>`;
-    const btn = document.createElement("button");
-    btn.className = "btn btn-secondary";
-    btn.textContent = "👤 Открыть профиль";
-    btn.onclick = () => showPublicProfile(overlay, mv.vk_id);
-    card.appendChild(btn);
-    detail.appendChild(card);
+    showGamePopupWithContent(`${mv.icon} В пути`, (content) => {
+        content.innerHTML = `<div class="profile-row">${escapeHtml(mv.message)}</div>`;
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.style.marginTop = "10px";
+        btn.textContent = "👤 Открыть профиль";
+        btn.onclick = () => showPublicProfile(overlay, mv.vk_id);
+        content.appendChild(btn);
+    });
 }
 
 function wireMarkerClicks(overlay, markers) {
@@ -232,20 +230,21 @@ function wireMarkerClicks(overlay, markers) {
 }
 
 async function showDormPeople(overlay, dorm) {
-    const detail = overlay.querySelector("#map-detail");
-    detail.innerHTML = "";
-    const card = document.createElement("div");
-    card.className = "card map-detail-card";
-    card.innerHTML = `<div class="subtitle">Общага №${dorm.number} — жильцы (${dorm.residents.length}/20):</div>`;
-    dorm.residents.forEach((p) => {
-        const row = document.createElement("div");
-        row.className = "map-person";
-        const name = p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id;
-        row.textContent = `👤 ${name} — ${p.display_profession}`;
-        row.onclick = () => showPublicProfile(overlay, p.vk_id);
-        card.appendChild(row);
+    showGamePopupWithContent(`🏢 Общага №${dorm.number}`, (content) => {
+        content.innerHTML = `<div class="profile-dim" style="margin-bottom:8px">Жильцы (${dorm.residents.length}/20):</div>`;
+        if (!dorm.residents.length) {
+            content.innerHTML += `<div class="profile-dim">Пока пусто.</div>`;
+            return;
+        }
+        dorm.residents.forEach((p) => {
+            const row = document.createElement("div");
+            row.className = "map-person";
+            const name = p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id;
+            row.textContent = `👤 ${name} — ${p.display_profession}`;
+            row.onclick = () => showPublicProfile(overlay, p.vk_id);
+            content.appendChild(row);
+        });
     });
-    detail.appendChild(card);
 }
 
 async function renderPrivateSectorMap(overlay) {
@@ -265,7 +264,6 @@ async function renderPrivateSectorMap(overlay) {
             <button class="btn btn-secondary" id="map-back-btn">← Назад на карту города</button>
         </div>
         <div class="map-svg-wrap" id="map-svg-wrap"></div>
-        <div id="map-detail"></div>
     `;
     overlay.querySelector("#map-back-btn").onclick = () => renderCityMap(overlay);
 
@@ -310,19 +308,16 @@ async function renderPrivateSectorMap(overlay) {
 }
 
 async function showPublicProfile(overlay, vkId) {
-    const detail = overlay.querySelector("#map-detail");
-    detail.innerHTML = "";
-    const card = document.createElement("div");
-    card.className = "card map-detail-card";
-    card.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
-    detail.appendChild(card);
+    const { content } = showGamePopupWithContent(null, (c) => {
+        c.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
+    });
 
     try {
         const p = await apiFetch(`/api/map/player/${vkId}`);
         const badges = [];
         if (p.founder_number) badges.push(`🏆 Основатель города №${p.founder_number}`);
         if (p.is_deputy) badges.push(`🏛 Депутат`);
-        card.innerHTML = `
+        content.innerHTML = `
             <div class="title">${p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id}</div>
             <div class="profile-row">💼 ${escapeHtml(p.display_profession)}</div>
             <div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}</div>
@@ -330,7 +325,7 @@ async function showPublicProfile(overlay, vkId) {
             ${badges.map((b) => `<div class="profile-row">${b}</div>`).join("")}
         `;
     } catch (e) {
-        card.innerHTML = `<div class="error">${e.message}</div>`;
+        content.innerHTML = `<div class="error">${e.message}</div>`;
     }
 }
 

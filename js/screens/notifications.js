@@ -1,8 +1,11 @@
 import { apiFetch } from "../api.js";
+import { requestVkNotifications } from "../vk.js";
+import { showGameStylePopup } from "../gamePopup.js";
 
 export async function renderNotificationsScreen(root) {
     root.innerHTML = `
         <div class="title">🔔 Уведомления</div>
+        <button class="btn btn-secondary" id="vk-push-btn" style="margin-bottom:10px">🔔 Дублировать в push ВКонтакте</button>
         <div class="tab-row">
             <button class="tab-btn active" id="tab-personal">🔔 Личные</button>
             <button class="tab-btn" id="tab-news">🌍 Новости страны</button>
@@ -10,10 +13,27 @@ export async function renderNotificationsScreen(root) {
         <div id="notif-body"><div class="loading">Загружаем…</div></div>
     `;
 
+    root.querySelector("#vk-push-btn").onclick = () => enableVkPush(root);
     root.querySelector("#tab-personal").onclick = () => switchTab(root, "personal");
     root.querySelector("#tab-news").onclick = () => switchTab(root, "news");
 
     await loadPersonal(root);
+}
+
+async function enableVkPush(root) {
+    const allowed = await requestVkNotifications();
+    try {
+        await apiFetch("/api/profile/vk_notifications", { method: "POST", body: { allowed } });
+    } catch (e) {
+        showGameStylePopup("❌ Не получилось", e.message);
+        return;
+    }
+    showGameStylePopup(
+        allowed ? "🔔 Готово!" : "Не разрешено",
+        allowed
+            ? "Теперь важные события в игре будут дублироваться push-уведомлением ВКонтакте."
+            : "Ты не разрешил(а) уведомления — можно включить позже этой же кнопкой.",
+    );
 }
 
 function switchTab(root, tab) {

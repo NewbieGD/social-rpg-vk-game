@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 
 const ITEM_ICONS = {
     coffee: "☕", energy_drink: "⚡", energy_crash: "😵", alcohol: "🍺",
@@ -25,6 +26,19 @@ export async function renderShopScreen(root) {
     }
 
     renderShelves(root, items, profile, "shop");
+    checkNewArrivals();
+}
+
+async function checkNewArrivals() {
+    try {
+        const data = await apiFetch("/api/shop/new_arrivals");
+        if (data.arrivals.length > 0) {
+            const names = data.arrivals.map((a) => escapeHtml(a.name)).join(", ");
+            showGameStylePopup("🆕 Новое поступление!", `В Магазине снова есть: <b>${names}</b> (раньше закончилось).`);
+        }
+    } catch (e) {
+        // не критично — просто не покажем в этот раз
+    }
 }
 
 async function renderBlackMarket(root, profile) {
@@ -39,6 +53,27 @@ async function renderBlackMarket(root, profile) {
     renderShelves(root, items, profile, "blackmarket");
 }
 
+async function showMyDeliveriesPopup() {
+    const { content } = showGamePopupWithContent("📦 Что мне везут", (c) => {
+        c.innerHTML = `<div class="loading">Загружаем…</div>`;
+    });
+    try {
+        const data = await apiFetch("/api/shop/my_deliveries");
+        if (!data.deliveries.length) {
+            content.innerHTML = `<div class="profile-dim">Сейчас ничего не едет.</div>`;
+            return;
+        }
+        content.innerHTML = data.deliveries.map((d) => `
+            <div class="shop-item">
+                <div class="shop-item-name">${escapeHtml(d.item_name)}</div>
+                <div class="profile-dim">${d.has_courier ? "🚚 Курьер уже в пути" : "⏳ Курьера пока нет — доставят автоматически в течение часа, либо раньше, если найдётся свободный"}</div>
+            </div>
+        `).join("");
+    } catch (e) {
+        content.innerHTML = `<div class="error">${e.message}</div>`;
+    }
+}
+
 function renderShelves(root, items, profile, mode) {
     const isBlackMarket = mode === "blackmarket";
 
@@ -48,9 +83,14 @@ function renderShelves(root, items, profile, mode) {
         </div>
         <div class="title">${isBlackMarket ? "🕶 Чёрный рынок" : "🛍 Магазин"}</div>
         <div class="subtitle">Нажми на товар на полке, чтобы узнать, что он даёт</div>
+        ${isBlackMarket ? "" : `<button class="btn btn-secondary" id="my-deliveries-btn" style="margin-bottom:10px">📦 Что мне везут</button>`}
         <div id="shelves" class="shop-shelves"></div>
         <div id="switch-btn"></div>
     `;
+
+    if (!isBlackMarket) {
+        root.querySelector("#my-deliveries-btn").onclick = () => showMyDeliveriesPopup();
+    }
 
     const shelves = root.querySelector("#shelves");
     const perShelf = 4;
@@ -60,8 +100,14 @@ function renderShelves(root, items, profile, mode) {
         items.slice(i, i + perShelf).forEach((item) => {
             const slot = document.createElement("div");
             slot.className = "shop-slot";
-            const priceUp = item.price > item.base_price;
-            const priceDown = item.price < item.base_price;
+            // Сравниваем ОКРУГЛЁННЫЕ (то, что реально видит игрок) значения,
+            // а не сырые числа — иначе почти любой товар после хоть одной
+            // покупки навсегда обведён красным из-за микроскопического
+            // (десятые доли ₭) отличия спроса от 1.0, невидимого на экране.
+            const displayedPrice = Math.round(item.price);
+            const displayedBase = Math.round(item.base_price);
+            const priceUp = displayedPrice > displayedBase;
+            const priceDown = displayedPrice < displayedBase;
             const trendBadge = priceUp ? "📈" : priceDown ? "📉" : "";
             if (priceUp) slot.classList.add("shop-slot-price-up");
             if (priceDown) slot.classList.add("shop-slot-price-down");
@@ -131,15 +177,18 @@ async function buyItem(root, item, allItems, profile, mode) {
         let text = "";
         if (result.needs_courier) {
             text = result.courier_assigned
-                ? `✅ Оплачено: ${escapeHtml(item.name)} (${result.delivery_fee ? "+" + result.delivery_fee.toFixed(0) + "₭ за доставку" : ""}) — заказ передан курьеру, он должен подтвердить и привезти. Следи за 🔔 Уведомлениями.`
-                : `✅ Оплачено: ${escapeHtml(item.name)} (${result.delivery_fee ? "+" + result.delivery_fee.toFixed(0) + "₭ за доставку" : ""}) — свободных курьеров сейчас нет, доставят автоматически в течение часа.`;
+                ? `Заказ передан курьеру, он должен подтвердить и привезти. Следи за 🔔 Уведомлениями.`
+                : `Свободных курьеров сейчас нет — доставят автоматически в течение часа.`;
+            if (result.delivery_fee) text += `<br>💸 За доставку списано ${result.delivery_fee.toFixed(0)}₭.`;
         } else {
-            text = `✅ Куплено: ${escapeHtml(item.name)}`;
+            text = `Товар сразу у тебя в инвентаре.`;
         }
         if (result.cover_profession) {
             text += `<br>🪪 Твоё прикрытие на карте: ${escapeHtml(result.cover_profession)}`;
         }
-        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">${text}</div>`;
+        resultEl.innerHTML = "";
+        buyBtn.disabled = false;
+        showGameStylePopup(`✅ Куплено: ${escapeHtml(item.name)}`, text);
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
         buyBtn.disabled = false;
