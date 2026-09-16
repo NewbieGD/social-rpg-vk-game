@@ -1,4 +1,5 @@
-import { apiFetch } from "../api.js";
+import { apiFetch, clearToken } from "../api.js";
+import { showGameStylePopup } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
 import { getVkUserInfo } from "../vk.js";
 import { animateCounter } from "../fx.js";
@@ -241,6 +242,28 @@ export async function renderProfileScreen(root) {
         const testCard = document.createElement("div");
         testCard.className = "card";
         testCard.innerHTML = `<div class="profile-dim" style="margin-bottom:10px">🧪 Кнопки для теста — уберите DEV_MODE перед тем, как показывать игру кому-то ещё.</div>`;
+        const switchBtn = document.createElement("button");
+        switchBtn.className = "btn btn-secondary";
+        switchBtn.textContent = "🔄 Сменить аккаунт (выйти)";
+        switchBtn.onclick = () => {
+            clearToken();
+            window.location.reload();
+        };
+        testCard.appendChild(switchBtn);
+        const eventBtn = document.createElement("button");
+        eventBtn.className = "btn btn-secondary";
+        eventBtn.textContent = "🔥 Запустить событие (пожар)";
+        eventBtn.onclick = async () => {
+            eventBtn.disabled = true;
+            try {
+                await apiFetch("/api/national_event/dev/trigger", { method: "POST" });
+                showGameStylePopup("🔥 Запущено!", "Событие «Лесные пожары» началось — загляни во вкладку «Событие», она уже должна была появиться.");
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+            eventBtn.disabled = false;
+        };
+        testCard.appendChild(eventBtn);
         const moneyBtn = document.createElement("button");
         moneyBtn.className = "btn";
         moneyBtn.textContent = "🎁 +1000₭ (тест)";

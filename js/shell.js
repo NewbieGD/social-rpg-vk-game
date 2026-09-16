@@ -15,6 +15,7 @@ import { renderArmyScreen } from "./screens/army.js";
 import { renderModernizationScreen } from "./screens/modernization.js";
 import { renderRiotScreen } from "./screens/riot.js";
 import { renderNotificationsScreen } from "./screens/notifications.js";
+import { renderNationalEventScreen } from "./screens/nationalEvent.js";
 
 const BASE_NAV_ITEMS = [
     { id: "profile", icon: "👤", label: "Профиль", render: renderProfileScreen },
@@ -102,6 +103,9 @@ export async function renderShell(appRoot) {
 
     pollShopArrivals(nav);
     setInterval(() => pollShopArrivals(nav), 30000);
+
+    pollNationalEvent(nav, content, navItems, switchTo);
+    setInterval(() => pollNationalEvent(nav, content, navItems, switchTo), 15000);
 }
 
 async function pollPendingDuty(nav) {
@@ -133,6 +137,68 @@ async function pollShopArrivals(nav) {
         }
     } catch (e) {
         // не критично — просто не покажем значок в этот раз
+    }
+}
+
+const EVENT_NAV_ITEM = { id: "national-event", icon: "🔥", label: "Событие", render: renderNationalEventScreen };
+let nationalEventWasActive = false;
+
+async function pollNationalEvent(nav, content, navItems, switchToFn) {
+    let status;
+    try {
+        status = await apiFetch("/api/national_event/status");
+    } catch (e) {
+        return; // не критично — попробуем на следующем опросе
+    }
+
+    const isShowing = navItems.some((i) => i.id === "national-event");
+
+    if (status.active && !isShowing) {
+        navItems.push(EVENT_NAV_ITEM);
+        const btn = document.createElement("button");
+        btn.className = "nav-btn nav-btn-alert";
+        btn.id = "nav-national-event";
+        btn.innerHTML = `<span class="nav-icon">${EVENT_NAV_ITEM.icon}</span><span class="nav-label">${EVENT_NAV_ITEM.label}</span>`;
+        btn.onclick = () => switchToFn("national-event", content, nav, navItems);
+        nav.appendChild(btn);
+    } else if (!status.active && isShowing) {
+        const idx = navItems.findIndex((i) => i.id === "national-event");
+        if (idx >= 0) navItems.splice(idx, 1);
+        const btn = nav.querySelector("#nav-national-event");
+        if (btn) {
+            const wasActive = btn.classList.contains("active");
+            btn.remove();
+            if (wasActive) switchToFn("profile", content, nav, navItems);
+        }
+    }
+
+    // Красный экран — только пока событие РЕАЛЬНО идёт (status:"active"),
+    // не во время 30-минутной витрины с итогами (status:"cooldown").
+    document.body.classList.toggle("fire-event-theme", !!status.active && status.status === "active");
+
+    if (status.active && !nationalEventWasActive) {
+        playAlertSound();
+    }
+    nationalEventWasActive = !!status.active;
+}
+
+function playAlertSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.15, 0.3].forEach((delay, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = "square";
+            osc.frequency.value = i % 2 === 0 ? 880 : 660;
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.12);
+            osc.start(ctx.currentTime + delay);
+            osc.stop(ctx.currentTime + delay + 0.12);
+        });
+    } catch (e) {
+        // не критично — просто без звука в этот раз
     }
 }
 

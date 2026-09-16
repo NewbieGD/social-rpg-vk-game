@@ -1644,6 +1644,13 @@ body.riot-theme .bottom-nav {
     transition: transform 0.15s;
 }
 
+.buff-icon-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
 .buff-icon-btn:active {
     transform: scale(0.92);
 }
@@ -2273,4 +2280,150 @@ body.riot-theme .bottom-nav {
     font-weight: 700;
     font-size: 12px;
     color: #c9d0e0;
+}
+
+/* ---------- Событие государственного масштаба: красный экран пожара ---------- */
+
+body.fire-event-theme {
+    animation: fire-event-pulse-bg 2s ease-in-out infinite;
+}
+
+@keyframes fire-event-pulse-bg {
+    0%, 100% { background-color: #250606; }
+    50% { background-color: #3d0a0a; }
+}
+
+body.fire-event-theme #app {
+    background: linear-gradient(180deg, #3d0f0f, #200606);
+}
+
+body.fire-event-theme .card,
+body.fire-event-theme .screen-content {
+    border-color: #8a2f2f !important;
+}
+
+body.fire-event-theme .bottom-nav {
+    border-top-color: #8a2f2f;
+}
+
+.nav-btn-alert {
+    animation: nav-alert-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes nav-alert-pulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(255, 107, 129, 0); }
+    50% { box-shadow: 0 0 10px rgba(255, 107, 129, 0.7); }
+}
+
+/* ---------- Экран события (js/screens/nationalEvent.js) ---------- */
+
+.event-banner {
+    background: linear-gradient(160deg, #2a1010, #1a0808);
+    border: 1px solid #8a2f2f;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+}
+
+.event-banner-victory {
+    border-color: #d4af37;
+    background: linear-gradient(160deg, #241d10, #1a1508);
+}
+
+.event-banner-title {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: #ff9e6d;
+    margin-bottom: 8px;
+}
+
+.event-banner-victory .event-banner-title {
+    color: #ffd873;
+}
+
+.event-banner-desc {
+    color: #d8c0c0;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 16px;
+}
+
+.event-progress-wrap {
+    margin-bottom: 16px;
+}
+
+.event-progress-bar {
+    height: 18px;
+    background: #1a0808;
+    border: 1px solid #8a2f2f;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.event-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b3d, #ffb454);
+    transition: width 0.5s ease-out;
+}
+
+.event-progress-text {
+    margin-top: 6px;
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 700;
+    color: #ffb454;
+}
+
+.event-help-btn {
+    background: linear-gradient(160deg, #ff6b3d, #d94f24);
+    font-size: 16px;
+    padding: 14px;
+}
+
+.event-leaderboard-row {
+    text-align: left;
+    padding: 6px 0;
+    color: #f0d9a8;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.event-game-score {
+    text-align: center;
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: #ffb454;
+    margin-bottom: 8px;
+}
+
+.event-game-field {
+    position: relative;
+    width: 320px;
+    max-width: 100%;
+    height: 420px;
+    background: linear-gradient(180deg, #1a1010, #0d0808);
+    border: 1px solid #8a2f2f;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.event-ember {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.event-ember-hit {
+    animation: event-ember-pop 0.2s ease-out forwards;
+}
+
+@keyframes event-ember-pop {
+    to { transform: scale(1.8); opacity: 0; }
 }

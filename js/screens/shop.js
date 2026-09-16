@@ -120,7 +120,7 @@ function renderShelves(root, items, profile, mode) {
                 ${item.stock !== null && item.stock !== undefined ? `<div class="shop-slot-stock">${outOfStock ? "нет в наличии" : "ост. " + item.stock}</div>` : ""}
             `;
             slot.title = item.name;
-            slot.onclick = () => renderItemCard(root, item, items, profile, mode);
+            slot.onclick = () => showItemPopup(item, items, profile, mode);
             shelf.appendChild(slot);
         });
         shelves.appendChild(shelf);
@@ -142,33 +142,26 @@ function renderShelves(root, items, profile, mode) {
     }
 }
 
-function renderItemCard(root, item, allItems, profile, mode) {
+function showItemPopup(item, allItems, profile, mode) {
     const stockText = item.stock === null || item.stock === undefined ? "∞" : String(item.stock);
     const priceLine = item.event
         ? `💰 ${Number(item.price).toFixed(0)} ₭ (обычно ${Number(item.base_price).toFixed(0)}₭) — остаток: ${stockText}`
         : `💰 ${Number(item.price).toFixed(0)} ₭ (остаток: ${stockText})`;
 
-    root.innerHTML = `
-        <div class="card">
-            <div class="title">${iconFor(item.code)} ${escapeHtml(item.name)}</div>
+    const { content } = showGamePopupWithContent(`${iconFor(item.code)} ${escapeHtml(item.name)}`, (c) => {
+        c.innerHTML = `
             <div class="profile-row profile-balance">${priceLine}</div>
             ${item.event ? `<div class="profile-row" style="color:${item.event.multiplier < 1 ? "#7ee787" : "#ffb454"}">${item.event.multiplier < 1 ? "📉" : "📈"} ${escapeHtml(item.event.reason)}</div>` : ""}
             <div class="subtitle">${escapeHtml(item.description || "")}</div>
-            <button class="btn" id="buy-btn">✅ Купить</button>
-            <button class="btn btn-secondary" id="back-btn">🔙 Назад</button>
-            <div id="buy-result"></div>
-        </div>
-    `;
-
-    root.querySelector("#back-btn").onclick = () => renderShelves(root, allItems, profile, mode);
-    root.querySelector("#buy-btn").onclick = () => buyItem(root, item, allItems, profile, mode);
+            <button class="btn" id="buy-btn" style="margin-top:10px">✅ Купить</button>
+        `;
+    });
+    content.querySelector("#buy-btn").onclick = () => buyItem(content, item, allItems, profile, mode);
 }
 
-async function buyItem(root, item, allItems, profile, mode) {
-    const resultEl = root.querySelector("#buy-result");
-    const buyBtn = root.querySelector("#buy-btn");
+async function buyItem(content, item, allItems, profile, mode) {
+    const buyBtn = content.querySelector("#buy-btn");
     buyBtn.disabled = true;
-    resultEl.innerHTML = `<div class="loading">Покупаем…</div>`;
 
     const path = mode === "blackmarket" ? `/api/blackmarket/buy/${item.code}` : `/api/shop/buy/${item.code}`;
 
@@ -186,12 +179,11 @@ async function buyItem(root, item, allItems, profile, mode) {
         if (result.cover_profession) {
             text += `<br>🪪 Твоё прикрытие на карте: ${escapeHtml(result.cover_profession)}`;
         }
-        resultEl.innerHTML = "";
         buyBtn.disabled = false;
         showGameStylePopup(`✅ Куплено: ${escapeHtml(item.name)}`, text);
     } catch (e) {
-        resultEl.innerHTML = `<div class="error">${e.message}</div>`;
         buyBtn.disabled = false;
+        showGameStylePopup("❌ Не получилось", e.message);
     }
 }
 

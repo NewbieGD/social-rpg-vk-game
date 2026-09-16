@@ -138,7 +138,7 @@ function renderSvg(overlay, markers, movements) {
         const badge = m.kind === "dorm" ? `<text x="12" y="-10" font-size="11" class="map-dorm-count">${m.dorm.residents.length}/20</text>` : "";
         const houseBadge = m.kind === "private_sector_link" ? `<text x="14" y="-10" font-size="11" class="map-dorm-count">${m.houseCount}🏠</text>` : "";
         const iconEl = m.kind === "dorm"
-            ? `<image href="assets/dorms/dorm-lights.gif" x="-16" y="-16" width="32" height="32" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><text text-anchor="middle" dominant-baseline="central" font-size="16" style="display:none">${m.icon}</text>`
+            ? `<image href="assets/dorms/dorm-lights.gif" x="-16" y="-16" width="32" height="32" preserveAspectRatio="xMidYMid meet" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><text text-anchor="middle" dominant-baseline="central" font-size="16" style="display:none">${m.icon}</text>`
             : `<text text-anchor="middle" dominant-baseline="central" font-size="16">${m.icon}</text>`;
         return `
         <g class="map-marker map-marker-${m.kind}" data-marker="${i}" transform="translate(${m.x},${m.y})">
@@ -285,7 +285,7 @@ async function renderPrivateSectorMap(overlay) {
     const markerEls = markers.map((m, i) => `
         <g class="map-marker map-marker-private_house" data-marker="${i}" transform="translate(${m.x},${m.y})">
             ${m.houseSkin
-                ? `<image href="assets/houses/${m.houseSkin}.png" x="-24" y="-24" width="48" height="48" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><text text-anchor="middle" dominant-baseline="central" font-size="22" style="display:none">🏠</text>`
+                ? `<image href="assets/houses/${m.houseSkin}.png" x="-24" y="-24" width="48" height="48" preserveAspectRatio="xMidYMid meet" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><text text-anchor="middle" dominant-baseline="central" font-size="22" style="display:none">🏠</text>`
                 : `<text text-anchor="middle" dominant-baseline="central" font-size="22">🏠</text>`}
             <text text-anchor="middle" y="32" font-size="9" class="map-marker-label">${escapeHtml(m.label)}</text>
         </g>
