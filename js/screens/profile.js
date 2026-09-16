@@ -264,6 +264,20 @@ export async function renderProfileScreen(root) {
             eventBtn.disabled = false;
         };
         testCard.appendChild(eventBtn);
+        const forceFinishBtn = document.createElement("button");
+        forceFinishBtn.className = "btn btn-secondary";
+        forceFinishBtn.textContent = "🛑 Сбросить событие (тест)";
+        forceFinishBtn.onclick = async () => {
+            forceFinishBtn.disabled = true;
+            try {
+                await apiFetch("/api/national_event/dev/force_finish", { method: "POST" });
+                showGameStylePopup("🛑 Сброшено!", "Текущее событие принудительно убрано — теперь можно запустить новое, оно подхватит актуальную цель/параметры.");
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+            forceFinishBtn.disabled = false;
+        };
+        testCard.appendChild(forceFinishBtn);
         const moneyBtn = document.createElement("button");
         moneyBtn.className = "btn";
         moneyBtn.textContent = "🎁 +1000₭ (тест)";
