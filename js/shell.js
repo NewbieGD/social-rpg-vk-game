@@ -86,7 +86,7 @@ export async function renderShell(appRoot) {
         const btn = document.createElement("button");
         btn.className = "nav-btn";
         btn.id = `nav-${item.id}`;
-        btn.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${item.id === "notifications" ? '<span class="nav-badge" id="notif-badge" style="display:none">0</span>' : ""}${item.id === "army" ? '<span class="nav-badge" id="army-badge" style="display:none">!</span>' : ""}${item.id === "work" ? '<span class="nav-badge" id="work-badge" style="display:none">0</span>' : ""}${item.id === "shop" ? '<span class="nav-badge" id="shop-badge" style="display:none">0</span>' : ""}`;
+        btn.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${item.id === "notifications" ? '<span class="nav-badge" id="notif-badge" style="display:none">0</span>' : ""}${item.id === "army" ? '<span class="nav-badge" id="army-badge" style="display:none">!</span>' : ""}${item.id === "work" ? '<span class="nav-badge" id="work-badge" style="display:none">0</span>' : ""}${item.id === "shop" ? '<span class="nav-badge" id="shop-badge" style="display:none">0</span>' : ""}${item.id === "state" ? '<span class="nav-badge" id="gov-badge" style="display:none">0</span>' : ""}`;
         btn.onclick = () => switchTo(item.id, content, nav, navItems);
         nav.appendChild(btn);
     });
@@ -103,6 +103,9 @@ export async function renderShell(appRoot) {
 
     pollShopArrivals(nav);
     setInterval(() => pollShopArrivals(nav), 30000);
+
+    pollGovEvents(nav);
+    setInterval(() => pollGovEvents(nav), 30000);
 
     pollNationalEvent(nav, content, navItems, switchTo);
     setInterval(() => pollNationalEvent(nav, content, navItems, switchTo), 15000);
@@ -131,6 +134,22 @@ async function pollShopArrivals(nav) {
         const profile = await apiFetch("/api/profile");
         if (profile.new_shop_arrivals_count > 0) {
             badge.textContent = "🆕";
+            badge.style.display = "inline-block";
+        } else {
+            badge.style.display = "none";
+        }
+    } catch (e) {
+        // не критично — просто не покажем значок в этот раз
+    }
+}
+
+async function pollGovEvents(nav) {
+    const badge = nav.querySelector("#gov-badge");
+    if (!badge) return;
+    try {
+        const profile = await apiFetch("/api/profile");
+        if (profile.new_gov_events_count > 0) {
+            badge.textContent = profile.new_gov_events_count > 9 ? "9+" : String(profile.new_gov_events_count);
             badge.style.display = "inline-block";
         } else {
             badge.style.display = "none";

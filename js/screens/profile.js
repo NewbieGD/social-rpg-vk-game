@@ -63,7 +63,8 @@ export async function renderProfileScreen(root) {
 
     const nameClass = isPresident
         ? "president-name-fire"
-        : cosmetics.includes("gradient_name") ? "cosmetic-gradient-name" : cosmetics.includes("golden_name") ? "cosmetic-golden-name" : "";
+        : user.active_name_style === "gradient_name" ? "cosmetic-gradient-name"
+        : user.active_name_style === "golden_name" ? "cosmetic-golden-name" : "";
     const nameBadges = [
         cosmetics.includes("crown_badge") ? "👑" : "",
         cosmetics.includes("vip_badge") ? "💎 VIP" : "",
@@ -149,8 +150,8 @@ export async function renderProfileScreen(root) {
         mainLines.push(`<div class="profile-row profile-dim">🔗 Тебя пригласил(а): ${inviterName}</div>`);
     }
 
-    const hasNeonFrame = cosmetics.includes("profile_frame_neon");
-    const avatarFrameClass = isPresident ? " profile-avatar-president" : hasNeonFrame ? " profile-avatar-neon" : "";
+    const FRAME_CLASSES = { profile_frame_neon: " profile-avatar-neon", profile_frame_gold: " profile-avatar-gold", profile_frame_ice: " profile-avatar-ice" };
+    const avatarFrameClass = isPresident ? " profile-avatar-president" : FRAME_CLASSES[user.active_frame] || "";
 
     const buffIcons = (user.buffs || []).map((b, i) =>
         `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}"><img src="assets/icons/${b.code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${b.icon}</span></button>`
@@ -278,6 +279,21 @@ export async function renderProfileScreen(root) {
             forceFinishBtn.disabled = false;
         };
         testCard.appendChild(forceFinishBtn);
+        const fixPresidentBtn = document.createElement("button");
+        fixPresidentBtn.className = "btn btn-secondary";
+        fixPresidentBtn.textContent = "🔧 Починить застрявшее президентство";
+        fixPresidentBtn.onclick = async () => {
+            fixPresidentBtn.disabled = true;
+            try {
+                const r = await apiFetch("/api/dev/fix_stale_president", { method: "POST" });
+                showGameStylePopup(r.status === "fixed" ? "🔧 Починено!" : "ℹ️ Не требуется", r.message);
+                if (r.status === "fixed") await renderProfileScreen(root);
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+            fixPresidentBtn.disabled = false;
+        };
+        testCard.appendChild(fixPresidentBtn);
         const moneyBtn = document.createElement("button");
         moneyBtn.className = "btn";
         moneyBtn.textContent = "🎁 +1000₭ (тест)";
@@ -313,6 +329,9 @@ export async function renderProfileScreen(root) {
         root.appendChild(testCard);
     }
 
+    if (user.expired_buffs && user.expired_buffs.length) {
+        showExpiredBuffsPopupQueue(user.expired_buffs);
+    }
     if (user.new_buffs && user.new_buffs.length) {
         showNewBuffsPopupQueue(user.new_buffs);
     }
@@ -374,6 +393,26 @@ async function renderFriendsOverlay(root) {
         card.onclick = () => window.open(f.vk_profile_url, "_blank");
         root.appendChild(card);
     });
+}
+
+function showExpiredBuffsPopupQueue(buffs) {
+    const [first, ...rest] = buffs;
+    const overlay = document.createElement("div");
+    overlay.className = "chest-overlay";
+    overlay.innerHTML = `
+        <div class="chest-overlay-box">
+            <div class="chest-overlay-icon">⌛</div>
+            <div class="profile-dim" style="margin-bottom:4px">Действие закончилось</div>
+            <div class="chest-overlay-title" style="color:#a8adb8;font-size:16px;font-weight:700">${escapeHtml(first.title)}</div>
+            <div class="profile-dim" style="margin:8px 0 16px">Эффект больше не действует (либо предмет закончился).</div>
+            <button class="btn" id="expired-buff-close-btn">Понятно</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#expired-buff-close-btn").onclick = () => {
+        overlay.remove();
+        if (rest.length) showExpiredBuffsPopupQueue(rest);
+    };
 }
 
 function showNewBuffsPopupQueue(buffs) {

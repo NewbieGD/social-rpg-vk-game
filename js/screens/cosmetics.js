@@ -1,5 +1,6 @@
 import { apiFetch } from "../api.js";
 import { DEV_MODE } from "../config.js";
+import { showGameStylePopup } from "../gamePopup.js";
 
 const PREVIEW_BUILDERS = {
     golden_name: () => `<div class="cosmetics-preview"><span class="cosmetic-golden-name">Имя Игрока</span></div>`,
@@ -7,6 +8,8 @@ const PREVIEW_BUILDERS = {
     vip_badge: () => `<div class="cosmetics-preview">Имя Игрока 💎 VIP</div>`,
     crown_badge: () => `<div class="cosmetics-preview">👑 Имя Игрока</div>`,
     profile_frame_neon: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-neon cosmetics-preview-avatar">👤</div></div>`,
+    profile_frame_gold: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-gold cosmetics-preview-avatar">👤</div></div>`,
+    profile_frame_ice: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-ice cosmetics-preview-avatar">👤</div></div>`,
     mansion: () => `<div class="cosmetics-preview" style="font-size:32px">🏰</div>`,
 };
 
@@ -41,6 +44,19 @@ export async function renderCosmeticsScreen(root) {
         `;
         if (item.owned) {
             card.innerHTML += `<div class="profile-row" style="color:#7ee787">✅ Уже куплено</div>`;
+            if (item.category) {
+                const equipBtn = document.createElement("button");
+                if (item.equipped) {
+                    equipBtn.className = "btn btn-secondary";
+                    equipBtn.textContent = "✅ Надето";
+                    equipBtn.disabled = true;
+                } else {
+                    equipBtn.className = "btn";
+                    equipBtn.textContent = "👕 Надеть";
+                    equipBtn.onclick = () => equipItem(root, item.item_id, equipBtn);
+                }
+                card.appendChild(equipBtn);
+            }
         } else {
             const btn = document.createElement("button");
             btn.className = "btn";
@@ -61,6 +77,17 @@ export async function renderCosmeticsScreen(root) {
         }
         list.appendChild(card);
     });
+}
+
+async function equipItem(root, itemId, btn) {
+    btn.disabled = true;
+    try {
+        await apiFetch("/api/cosmetics/equip", { method: "POST", body: { item_id: itemId } });
+        await renderCosmeticsScreen(root);
+    } catch (e) {
+        btn.disabled = false;
+        showGameStylePopup("❌ Не получилось", e.message);
+    }
 }
 
 async function grantCosmeticForTest(root, itemId, btn, resultEl) {

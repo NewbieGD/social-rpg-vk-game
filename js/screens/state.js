@@ -34,22 +34,29 @@ export async function renderStateScreen(root) {
     parts.push(`<div id="protest-card"></div>`);
     parts.push(renderRoleActionsCard(profile));
     if (isVor) parts.push(renderVorCard());
+    parts.push(`<button class="btn btn-secondary" id="history-toggle-btn" style="margin-bottom:10px">📜 История правления</button><div id="history-section"></div>`);
     parts.push(`<div id="state-result"></div>`);
 
     root.innerHTML = `<div class="title gov-page-title">🏛 Государство</div>${parts.join("")}`;
 
     root.querySelector("#stats-btn").onclick = () => loadCountryStats(root);
+    root.querySelector("#history-toggle-btn").onclick = () => toggleHistorySection(root);
     renderElections(root, elections);
     loadProtestStatus(root);
     wireRoleActions(root, profile);
     loadPublicReserveInfo(root);
+    apiFetch("/api/gov_tab/mark_checked", { method: "POST" }).catch(() => {});
     if (isVor) {
         wireVorActions(root);
     }
 }
 
 function renderCountryCard(state) {
-    const presidentText = state.president ? nameOf(state.president) : "не назначен";
+    const presidentText = state.president
+        ? nameOf(state.president)
+        : state.president_election_pending
+            ? "⏳ Место вакантно — идут выборы, скоро будет избран новый"
+            : "Место вакантно";
     const ministers = Object.values(state.ministers)
         .map((m) => `${m.name}: ${m.vk_id ? nameOf(m) : "вакантно"}`)
         .join("<br>");
@@ -214,6 +221,45 @@ async function loadProtestStatus(root) {
                 resultEl.innerHTML = `<div class="error">${e.message}</div>`;
             }
         };
+    }
+}
+
+let historyShown = false;
+
+async function toggleHistorySection(root) {
+    const section = root.querySelector("#history-section");
+    historyShown = !historyShown;
+    if (!historyShown) {
+        section.innerHTML = "";
+        return;
+    }
+    section.innerHTML = `<div class="loading">Загружаем историю…</div>`;
+    try {
+        const data = await apiFetch("/api/president_history");
+        if (!data.terms.length) {
+            section.innerHTML = `<div class="profile-dim">Пока ни один президентский срок не завершился.</div>`;
+            return;
+        }
+        section.innerHTML = "";
+        data.terms.forEach((t) => {
+            const card = document.createElement("div");
+            card.className = "gov-history-card";
+            const name = t.username ? "@" + escapeHtml(t.username) : "ID " + t.president_tg_id;
+            const fmt = (v, suffix = "%") => (v === null || v === undefined ? "нет данных" : `${v > 0 ? "+" : ""}${v}${suffix}`);
+            card.innerHTML = `
+                <div class="gov-history-name">👤 Президент: ${name}</div>
+                <div class="gov-history-row">📅 Правление: ${t.days} дн.</div>
+                <div class="gov-history-row">💰 Казна: ${fmt(t.economy_growth_pct)}</div>
+                <div class="gov-history-row">🏛 Налоги: ${fmt(t.tax_change_pct, " п.п.")}</div>
+                <div class="gov-history-row">🚨 Преступность: ${fmt(t.criminal_change_pct)}</div>
+                <div class="gov-history-row">👥 Население: ${fmt(t.population_change, "")}</div>
+                <div class="gov-history-row">🔥 Кризисов: ${t.crises_count}</div>
+                <div class="gov-history-row">⭐ Народный рейтинг: ${t.final_rating !== null ? t.final_rating.toFixed(0) + "%" : "нет данных"}</div>
+            `;
+            section.appendChild(card);
+        });
+    } catch (e) {
+        section.innerHTML = `<div class="error">${e.message}</div>`;
     }
 }
 

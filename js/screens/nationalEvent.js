@@ -2,6 +2,8 @@ import { apiFetch } from "../api.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 import { playSuccessSound, playFailSound, burstConfetti } from "../fx.js";
 
+const REWARD_TEXT = { 0: "🥇 Награда: 3000₭", 1: "🥈 Награда: 2000₭", 2: "🥉 Награда: 1000₭" };
+
 export async function renderNationalEventScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
     let status;
@@ -38,25 +40,68 @@ function renderActiveEvent(root, status) {
             <button class="btn event-help-btn" id="event-help-btn">${status.help_label}</button>
         </div>
     `;
-    root.querySelector("#event-help-btn").onclick = () => startFireMinigame(root, status);
+    root.querySelector("#event-help-btn").onclick = () => tryStartMinigame(root);
+}
+
+async function tryStartMinigame(root) {
+    // Вкладка могла провисеть открытой давно (без обновления страницы) —
+    // сверяем актуальный статус ПРЯМО ПЕРЕД стартом игры, а не полагаемся
+    // на то, что было при последней прорисовке экрана.
+    let fresh;
+    try {
+        fresh = await apiFetch("/api/national_event/status");
+    } catch (e) {
+        showGameStylePopup("❌ Не получилось", e.message);
+        return;
+    }
+    if (!fresh.active || fresh.status !== "active") {
+        showGameStylePopup("🎉 Уже не актуально", "Событие уже завершилось (кто-то добил последние очки раньше). Обновляем экран.");
+        await renderNationalEventScreen(root);
+        return;
+    }
+    startFireMinigame(root, fresh);
 }
 
 function renderShowcase(root, status) {
-    const rows = (status.leaderboard || []).map((p, i) => {
-        const name = p.username ? "@" + escapeHtmlEvent(p.username) : "ID " + p.vk_id;
-        const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-        return `<div class="event-leaderboard-row">${medal} ${name} — ${p.points} очков</div>`;
-    }).join("");
-
-    const minutesLeft = Math.ceil((status.cooldown_seconds_left || 0) / 60);
     root.innerHTML = `
         <div class="event-banner event-banner-victory">
             <div class="event-banner-title">🎉 Событие завершено!</div>
-            <div class="event-banner-desc">Страна справилась общими усилиями. Эта вкладка исчезнет через ${minutesLeft} мин.</div>
+            <div class="event-banner-desc">Страна справилась общими усилиями. Эта вкладка исчезнет через ${Math.ceil((status.cooldown_seconds_left || 0) / 60)} мин.</div>
             <div class="subtitle" style="margin-top:12px">🏆 Топ-10 участников</div>
-            ${rows || `<div class="profile-dim">Данных пока нет.</div>`}
+            <div id="event-leaderboard"></div>
         </div>
     `;
+    const list = root.querySelector("#event-leaderboard");
+    (status.leaderboard || []).forEach((p, i) => {
+        const row = document.createElement("div");
+        row.className = "event-leaderboard-row event-leaderboard-row-clickable";
+        const name = p.username ? "@" + escapeHtmlEvent(p.username) : "ID " + p.vk_id;
+        const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+        const reward = REWARD_TEXT[i] ? ` <span class="event-reward-tag">${REWARD_TEXT[i]}</span>` : "";
+        row.innerHTML = `${medal} ${name} — ${p.points} очков${reward}`;
+        row.onclick = () => showEventPlayerProfile(p.vk_id);
+        list.appendChild(row);
+    });
+    if (!(status.leaderboard || []).length) {
+        list.innerHTML = `<div class="profile-dim">Данных пока нет.</div>`;
+    }
+}
+
+async function showEventPlayerProfile(vkId) {
+    const { content } = showGamePopupWithContent(null, (c) => {
+        c.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
+    });
+    try {
+        const p = await apiFetch(`/api/map/player/${vkId}`);
+        content.innerHTML = `
+            <div class="title">${p.username ? "@" + escapeHtmlEvent(p.username) : "ID " + p.vk_id}</div>
+            <div class="profile-row">💼 ${escapeHtmlEvent(p.display_profession)}</div>
+            <div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}</div>
+            <div class="profile-row">⚔️ Побед в дуэлях: ${p.duel_wins}</div>
+        `;
+    } catch (e) {
+        content.innerHTML = `<div class="error">${e.message}</div>`;
+    }
 }
 
 // ---------- мини-игра: тушим падающие огоньки ----------
@@ -66,11 +111,13 @@ const GAME_HEIGHT = 420;
 const EMBER_SIZE = 44;
 const SPAWN_INTERVAL_MS = 700;
 const FALL_DURATION_MS = 3200;
+const EVENT_STATUS_CHECK_MS = 4000; // как часто проверяем, не завершил ли событие кто-то другой, пока мы играем
 
 function startFireMinigame(root, status) {
     let score = 0;
     let gameOver = false;
     let spawnTimer = null;
+    let statusCheckTimer = null;
     const embers = [];
 
     const { content, overlay } = showGamePopupWithContent("🧯 Туши огонь!", (c) => {
@@ -119,15 +166,38 @@ function startFireMinigame(root, status) {
         };
     }
 
+    function stopTimers() {
+        clearInterval(spawnTimer);
+        clearInterval(statusCheckTimer);
+        embers.forEach((e) => clearInterval(e._fallInterval));
+    }
+
     function endGame(manualStop) {
         if (gameOver) return;
         gameOver = true;
-        clearInterval(spawnTimer);
-        embers.forEach((e) => clearInterval(e._fallInterval));
+        stopTimers();
         if (!manualStop) playFailSound();
-
-        submitScore(root, status, score, overlay);
+        submitScore(root, score, overlay);
     }
+
+    // Пока мы играем, кто-то ДРУГОЙ мог уже добить событие — проверяем
+    // периодически и, если так, сразу останавливаем игру и засчитываем
+    // то, что успели набрать (см. пункт про "разногласия" очков).
+    statusCheckTimer = setInterval(async () => {
+        if (gameOver) return;
+        try {
+            const fresh = await apiFetch("/api/national_event/status");
+            if (!fresh.active || fresh.status !== "active") {
+                gameOver = true;
+                stopTimers();
+                overlay.remove();
+                showGameStylePopup("🎉 Событие уже завершено!", `Кто-то другой добил последние очки раньше. Твои ${score} очков в этот раз не потребовались — событие уже закрыто.`);
+                await renderNationalEventScreen(root);
+            }
+        } catch (e) {
+            // не критично — проверим на следующем цикле
+        }
+    }, EVENT_STATUS_CHECK_MS);
 
     spawnTimer = setInterval(spawnEmber, SPAWN_INTERVAL_MS);
     spawnEmber();
@@ -137,7 +207,7 @@ function startFireMinigame(root, status) {
     });
 }
 
-async function submitScore(root, status, score, overlay) {
+async function submitScore(root, score, overlay) {
     if (score <= 0) {
         showGameStylePopup("😔 Не в этот раз", "Ни одного огонька не потушено — попробуй ещё раз.");
         return;
@@ -145,12 +215,18 @@ async function submitScore(root, status, score, overlay) {
     try {
         const result = await apiFetch("/api/national_event/help", { method: "POST", body: { points: score } });
         overlay.remove();
+        const counted = result.counted_points;
+        const wastedNote = counted < score
+            ? ` (засчиталось ${counted} из ${score} — остальное уже не требовалось, шкала была почти заполнена)`
+            : "";
         if (result.event_completed) {
             playSuccessSound();
             burstConfetti(document.body, 60);
-            showGameStylePopup("🎉 Победа!", `Твои ${score} очков стали решающими — событие завершено! Спасибо за помощь стране.`);
+            showGameStylePopup("🎉 Победа!", `Твой вклад стал решающим${wastedNote} — событие завершено! Спасибо за помощь стране.`);
+        } else if (counted === 0) {
+            showGameStylePopup("🎉 Уже не актуально", "Событие завершилось, пока ты играл(а) — твои очки в этот раз не потребовались.");
         } else {
-            showGameStylePopup("✅ Зачтено!", `Потушено огоньков: ${score}. Внесено в общую шкалу события (${result.progress}/${result.target}).`);
+            showGameStylePopup("✅ Зачтено!", `Потушено огоньков: ${score}${wastedNote}. Внесено в общую шкалу события (${result.progress}/${result.target}).`);
         }
         await renderNationalEventScreen(root);
     } catch (e) {

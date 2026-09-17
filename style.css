@@ -923,6 +923,16 @@ body {
     box-shadow: 0 0 10px rgba(162, 155, 254, 0.7), 0 0 22px rgba(162, 155, 254, 0.4);
 }
 
+.profile-avatar-gold {
+    border: 2px solid #d4af37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.7), 0 0 22px rgba(212, 175, 55, 0.4);
+}
+
+.profile-avatar-ice {
+    border: 2px solid #74d9ec;
+    box-shadow: 0 0 10px rgba(116, 217, 236, 0.7), 0 0 22px rgba(116, 217, 236, 0.4);
+}
+
 /* ---------- дуэли: VS-карточки (js/screens/duels.js) ---------- */
 
 .duel-challenge-card {
@@ -2387,6 +2397,23 @@ body.fire-event-theme .bottom-nav {
     border-bottom: 1px solid rgba(212, 175, 55, 0.15);
 }
 
+.event-leaderboard-row-clickable {
+    cursor: pointer;
+    transition: background 0.15s;
+    border-radius: 6px;
+    padding: 8px 6px;
+}
+
+.event-leaderboard-row-clickable:hover {
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.event-reward-tag {
+    color: #7ee787;
+    font-weight: 700;
+    font-size: 12px;
+}
+
 .event-game-score {
     text-align: center;
     font-family: "Rajdhani", sans-serif;
@@ -2426,4 +2453,63 @@ body.fire-event-theme .bottom-nav {
 
 @keyframes event-ember-pop {
     to { transform: scale(1.8); opacity: 0; }
+}
+
+/* ---------- Государство: карточки истории правления (js/screens/state.js) ---------- */
+
+.gov-history-card {
+    background: linear-gradient(160deg, #201a10, #16130a);
+    border: 1px solid #6b5a2a;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.gov-history-name {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #d4af37;
+    margin-bottom: 6px;
+}
+
+.gov-history-row {
+    color: #d8cba8;
+    font-size: 14px;
+    padding: 2px 0;
+}
+
+/* ---------- Экран описания игры перед экзаменом (js/screens/intro.js) ---------- */
+
+.intro-screen {
+    padding-bottom: 10px;
+}
+
+.intro-section {
+    background: linear-gradient(160deg, #1e2740, #171f34);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.intro-heading {
+    font-family: "Rajdhani", sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    color: #a29bfe;
+    margin-bottom: 6px;
+}
+
+.intro-text {
+    color: #c9d0e0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.intro-footer {
+    text-align: center;
+    color: #8a92a8;
+    font-size: 13px;
+    margin: 14px 0 10px;
 }

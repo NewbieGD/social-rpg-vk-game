@@ -2,6 +2,7 @@ import { DEV_MODE } from "./config.js";
 import { getVkLaunchParams, initVkBridge } from "./vk.js";
 import { apiFetch, saveToken, getToken } from "./api.js";
 import { renderExamScreen, renderPddScreen, renderChoosingScreen, renderCriminalOfferScreen } from "./screens/exam.js";
+import { renderIntroScreen } from "./screens/intro.js";
 import { renderShell } from "./shell.js";
 
 const root = document.getElementById("app");
@@ -70,7 +71,7 @@ async function startGame() {
     }
 
     if (registerResult.status === "registered") {
-        await renderExamScreen(root);
+        await renderIntroScreen(root);
         return;
     }
 
