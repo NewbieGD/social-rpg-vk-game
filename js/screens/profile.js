@@ -1,5 +1,5 @@
 import { apiFetch, clearToken } from "../api.js";
-import { showGameStylePopup } from "../gamePopup.js";
+import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
 import { getVkUserInfo } from "../vk.js";
 import { animateCounter } from "../fx.js";
@@ -10,7 +10,8 @@ import { renderCosmeticsScreen } from "./cosmetics.js";
 
 const COSMETIC_NAMES = {
     golden_name: "Золотое имя", gradient_name: "Градиентное имя", vip_badge: "Значок VIP",
-    profile_frame_neon: "Неоновая рамка", crown_badge: "Корона", mansion: "Особняк",
+    profile_frame_neon: "Неоновая рамка", profile_frame_gold: "Золотая рамка", profile_frame_ice: "Ледяная рамка",
+    crown_badge: "Корона", mansion: "Особняк",
 };
 
 const STAGE_NAMES = {
@@ -133,11 +134,6 @@ export async function renderProfileScreen(root) {
         mainLines.push(`<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>`);
     }
 
-    if (cosmetics.length) {
-        const cosmeticNames = cosmetics.map((c) => COSMETIC_NAMES[c] || c).join(", ");
-        mainLines.push(`<div class="profile-row profile-dim">✨ Косметика: ${escapeHtml(cosmeticNames)}</div>`);
-    }
-
     if (!isPresident) {
         const reserveEligible = Number(user.rating) >= 10 && user.has_veto;
         mainLines.push(`<div class="profile-row profile-dim">🗳 Голос по Золотовалютному резерву: ${reserveEligible ? "✅ доступен" : `❌ нужны Рейтинг 10+ и «Вето» (сейчас: рейтинг ${Number(user.rating).toFixed(0)}, «Вето» ${user.has_veto ? "есть" : "нет"})`}</div>`);
@@ -166,6 +162,7 @@ export async function renderProfileScreen(root) {
                     <div class="profile-assets-row">
                         <button class="profile-asset-btn" id="profile-house-btn" title="Твой дом">${user.house_skin ? `<img src="assets/houses/${user.house_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.house_skin ? "display:none" : ""}">${user.has_house ? "🏠" : "🏗"}</span></button>
                         <button class="profile-asset-btn" id="profile-car-btn" title="Твоя машина">${user.car_skin ? `<img src="assets/cars/${user.car_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.car_skin ? "display:none" : ""}">${user.has_car ? "🚗" : "🚫"}</span></button>
+                        <button class="profile-asset-btn" id="profile-cosmetics-btn" title="Косметика">${user.active_frame ? `<div class="profile-avatar-placeholder ${FRAME_CLASSES[user.active_frame] ? FRAME_CLASSES[user.active_frame].trim() : ""}" style="width:100%;height:100%;font-size:16px">✨</div>` : "✨"}</button>
                     </div>
                     <div class="profile-main-col">${mainLines.join("")}</div>
                 </div>
@@ -191,6 +188,7 @@ export async function renderProfileScreen(root) {
     // Фото из VK подгружаем отдельно, не блокируя показ самого профиля —
     root.querySelector("#profile-house-btn").onclick = () => showAssetPopup("🏠 Твой дом", user.has_house, user.house_skin, "houses", "Дом ещё не приобретён — купи «Квартиру» в Магазине.");
     root.querySelector("#profile-car-btn").onclick = () => showAssetPopup("🚗 Твоя машина", user.has_car, user.car_skin, "cars", "Машина ещё не приобретена — купи её в Магазине.");
+    root.querySelector("#profile-cosmetics-btn").onclick = () => showCosmeticsPreviewPopup(root, user);
 
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
     // Bridge зависал (случается вне настоящего приложения VK), весь экран
@@ -479,6 +477,20 @@ const ASSET_SKIN_TITLES = {
     "house-mansion": "Особняк", "house-modern": "Современный дом", "house-castle": "Замок",
     "car-sport": "Спорткар", "car-lux": "Лимузин",
 };
+
+function showCosmeticsPreviewPopup(root, user) {
+    const frameText = user.active_frame ? (COSMETIC_NAMES[user.active_frame] || user.active_frame) : "не выбрана";
+    const nameStyleText = user.active_name_style ? (COSMETIC_NAMES[user.active_name_style] || user.active_name_style) : "не выбран";
+    showGamePopupWithContent("✨ Твоя косметика", (content) => {
+        content.innerHTML = `
+            <div class="profile-row">🖼 Рамка профиля: <b>${escapeHtml(frameText)}</b></div>
+            <div class="profile-row">🔤 Стиль имени: <b>${escapeHtml(nameStyleText)}</b></div>
+            <div class="profile-dim" style="margin:8px 0">Все купленные варианты (рамки, цвет имени и т.д.) хранятся тут — заходи в Косметику, чтобы посмотреть, что куплено, и переключиться на другой вариант.</div>
+            <button class="btn" id="cosmetics-go-btn">✨ Открыть Косметику</button>
+        `;
+        content.querySelector("#cosmetics-go-btn").onclick = () => showOverlayScreen(renderCosmeticsScreen);
+    });
+}
 
 function showAssetPopup(title, owned, skin, folder, emptyText) {
     const overlay = document.createElement("div");
