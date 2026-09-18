@@ -1,6 +1,7 @@
 import { apiFetch } from "../api.js";
 import { playMessageSound, playSuccessSound, playFailSound, burstConfetti } from "../fx.js";
 import { renderOtherProfile } from "./profile.js";
+import { showGameStylePopup } from "../gamePopup.js";
 
 const POLL_INTERVAL_MS = 3000;
 const THIEF_CHECK_INTERVAL_MS = 10000;
@@ -102,6 +103,7 @@ async function renderPeoplesRepCard(root) {
             <div id="rep-candidates"></div>
             ${isCurrentRep ? '<button class="btn" id="rep-petition-btn">📝 Отправить обращение президенту</button>' : ""}
             <div id="rep-result"></div>
+            <div id="petition-vote-section"></div>
         </div>
     `;
 
@@ -110,6 +112,48 @@ async function renderPeoplesRepCard(root) {
         container.querySelector("#rep-petition-btn").onclick = () => sendPetition(container);
     }
     await loadCandidates(container);
+    await loadPetitionVote(container);
+}
+
+async function loadPetitionVote(container) {
+    const section = container.querySelector("#petition-vote-section");
+    let elections;
+    try {
+        elections = await apiFetch("/api/elections");
+    } catch (e) {
+        return; // не критично — просто не покажем блок в этот раз
+    }
+    const petition = elections.find((e) => e.type === "petition_vote");
+    if (!petition) {
+        section.innerHTML = "";
+        return;
+    }
+
+    section.innerHTML = `
+        <div class="gov-election-card" style="margin-top:10px">
+            <div class="gov-election-title">📢 Голосование по обращению представителя народа</div>
+            <div class="profile-dim" style="margin:6px 0">Только обычные граждане — министры, депутаты и президент в этом голосовании не участвуют.</div>
+            <div id="petition-vote-buttons"></div>
+        </div>
+    `;
+    const btnRow = section.querySelector("#petition-vote-buttons");
+    petition.choices.forEach((choice) => {
+        const btn = document.createElement("button");
+        btn.className = "gov-vote-btn";
+        btn.textContent = `${choice.label} (${choice.votes})`;
+        btn.onclick = async () => {
+            btn.disabled = true;
+            try {
+                await apiFetch(`/api/elections/${petition.id}/vote`, { method: "POST", body: { choice: choice.value } });
+                section.querySelectorAll(".gov-vote-btn").forEach((b) => { b.disabled = true; b.style.opacity = "0.6"; });
+                showGameStylePopup("✅ Голос учтён!", `Ты проголосовал(а): «${escapeHtml(choice.label)}».`);
+            } catch (e) {
+                btn.disabled = false;
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+        };
+        btnRow.appendChild(btn);
+    });
 }
 
 async function registerCandidate(container) {

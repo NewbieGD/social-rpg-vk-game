@@ -1,14 +1,21 @@
 import { apiFetch } from "../api.js";
 
 const REQUEST_BUTTONS = [
-    { label: "🚑 Вызвать скорую (болезнь)", path: "/api/duty/ambulance" },
+    { label: "🚑 Вызвать скорую (болезнь или рана)", path: "/api/duty/ambulance" },
     { label: "🚒 Вызвать пожарного (пожар)", path: "/api/duty/call_firefighter" },
+    { label: "🚨 Вызвать МЧС (спасение)", path: "/api/duty/call_rescue" },
     { label: "👮 Позвать полицию (ограбили)", path: "/api/duty/call_police" },
     { label: "📚 Пересдать экзамен (Завод/Такси/Курьер)", path: "/api/duty/request_reexam" },
-    { label: "🖥 Починить IT-подписку", path: "/api/duty/request_it_fix" },
-    { label: "⚖️ Нанять адвоката (200₭, из тюрьмы)", path: "/api/duty/request_defense" },
+    { label: "💊 Запросить рецепт на Таблетки", path: "/api/duty/request_prescription", cooldownField: "prescription_cooldown_seconds" },
     { label: "🏗 Восстановить дом (после пожара)", path: "/api/duty/request_repair" },
+    { label: "🔧 Вызвать строителя (бытовая поломка)", path: "/api/duty/call_home_repair" },
+    { label: "🏠 Повторить попытку постройки Квартиры", path: "/api/duty/retry_house_build" },
 ];
+
+function formatCooldown(seconds) {
+    const mins = Math.ceil(seconds / 60);
+    return mins >= 60 ? `${Math.floor(mins / 60)}ч ${mins % 60}м` : `${mins} мин.`;
+}
 
 export async function renderDutyScreen(root) {
     root.innerHTML = `
@@ -21,20 +28,27 @@ export async function renderDutyScreen(root) {
         </div>
     `;
 
+    let profile = {};
+    try {
+        profile = await apiFetch("/api/profile");
+    } catch (e) {
+        // не критично — просто не покажем кулдауны в этот раз
+    }
+
     const btnContainer = root.querySelector("#request-buttons");
     REQUEST_BUTTONS.forEach((r) => {
         const btn = document.createElement("button");
         btn.className = "option-btn";
-        btn.textContent = r.label;
-        btn.onclick = () => sendRequest(root, r.path);
+        const cooldown = r.cooldownField ? profile[r.cooldownField] : null;
+        if (cooldown) {
+            btn.textContent = `${r.label} — ⏳ через ${formatCooldown(cooldown)}`;
+            btn.disabled = true;
+        } else {
+            btn.textContent = r.label;
+            btn.onclick = () => sendRequest(root, r.path);
+        }
         btnContainer.appendChild(btn);
     });
-
-    const prosecutionBtn = document.createElement("button");
-    prosecutionBtn.className = "option-btn";
-    prosecutionBtn.textContent = "⚖️ Обвинить вора в суде (он сейчас в тюрьме)";
-    prosecutionBtn.onclick = () => sendProsecution(root);
-    btnContainer.appendChild(prosecutionBtn);
 
     const snitchBtn = document.createElement("button");
     snitchBtn.className = "option-btn";
@@ -54,22 +68,6 @@ async function sendSnitch(root) {
     try {
         await apiFetch("/api/crime/snitch", { method: "POST", body: { target_vk_id: targetVkId } });
         resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">🕵️ Донос принят. Шанс поимки этого вора при следующем ограблении повышен.</div>`;
-    } catch (e) {
-        resultEl.innerHTML = `<div class="error">${e.message}</div>`;
-    }
-}
-
-async function sendProsecution(root) {
-    const idText = prompt("VK ID вора, который сейчас в тюрьме:");
-    if (!idText) return;
-    const thiefVkId = Number(idText);
-    if (!Number.isFinite(thiefVkId)) return;
-
-    const resultEl = root.querySelector("#request-result");
-    resultEl.innerHTML = `<div class="loading">Отправляем заявку…</div>`;
-    try {
-        const result = await apiFetch("/api/duty/request_prosecution", { method: "POST", body: { thief_vk_id: thiefVkId } });
-        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Заявка отправлена юристу (ID ${result.professional_vk_id}), жди ответа.</div>`;
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
     }

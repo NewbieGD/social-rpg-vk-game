@@ -2,7 +2,7 @@ import { apiFetch } from "../api.js";
 import { burstConfetti } from "../fx.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 
-const REMOTE_PROFESSIONS = ["it", "law"];
+const REMOTE_PROFESSIONS = []; // раньше IT и Юриспруденция — обе профессии убраны из игры
 
 export async function renderWorkScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -25,6 +25,19 @@ export async function renderWorkScreen(root) {
     if (profile.stage === "criminal") {
         body.innerHTML = `<div class="card"><div class="subtitle">У преступников нет обычной работы — доход с ограблений (раздел 🚨 Криминал).</div></div>`;
         return;
+    }
+
+    if (profile.stage === "worker" && Math.floor(Number(profile.authority)) >= 10) {
+        const switchCard = document.createElement("div");
+        switchCard.className = "card";
+        const switchCooldown = profile.profession_switch_cooldown_seconds;
+        if (switchCooldown) {
+            switchCard.innerHTML = `<div class="subtitle">🎓 Смена профессии</div><div class="profile-dim">⏳ Следующая попытка через ${formatMinutes(switchCooldown)}.</div>`;
+        } else {
+            switchCard.innerHTML = `<div class="subtitle">🎓 Смена профессии</div><div class="profile-dim" style="margin-bottom:8px">Ранг максимальный — можно попробовать переобучиться на дефицитную профессию.</div><div id="switch-options"></div>`;
+        }
+        body.appendChild(switchCard);
+        if (!switchCooldown) loadSwitchOptions(switchCard);
     }
 
     // Удалённые профессии (IT/Юриспруденция) — отдельная логика, её пока не
@@ -92,7 +105,7 @@ export async function renderWorkScreen(root) {
         if (profile.profession === "zavod") {
             appendZavodCard(root, body, commutedToday);
         } else if (profile.profession !== "taxi" && profile.profession !== "courier") {
-            appendCertifyCard(root, body);
+            appendCertifyCard(root, body, profile);
         }
     }
 
@@ -264,23 +277,32 @@ function formatOutcome(result) {
     return parts.join("<br>") || "✅ Разобрано";
 }
 
-function appendCertifyCard(root, body) {
+function appendCertifyCard(root, body, profile) {
     const certCard = document.createElement("div");
     certCard.className = "card";
-    certCard.innerHTML = `<div class="subtitle">🎓 Аттестация повышает ставку по текущей профессии на время (можно накопить до нескольких штук).</div>`;
+    certCard.innerHTML = `<div class="subtitle">🎓 Аттестация даёт +${(profile.certification_bonus_pct || 15)}% к доходу на сутки — раз в день, решает случайный Учитель по заявке.</div>`;
     const btn = document.createElement("button");
     btn.className = "btn";
-    btn.textContent = "🎓 Пройти аттестацию";
     const resultEl = document.createElement("div");
-    btn.onclick = async () => {
-        resultEl.innerHTML = `<div class="loading">Проходим аттестацию…</div>`;
-        try {
-            const result = await apiFetch("/api/certify", { method: "POST" });
-            resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Аттестация пройдена за ${result.price.toFixed(0)}₭, бонус +${result.bonus_pct.toFixed(0)}%</div>`;
-        } catch (e) {
-            resultEl.innerHTML = `<div class="error">${e.message}</div>`;
-        }
-    };
+
+    const cooldown = profile.certification_cooldown_seconds;
+    if (cooldown) {
+        btn.disabled = true;
+        btn.textContent = `⏳ Следующая попытка через ${formatMinutes(cooldown)}`;
+    } else {
+        btn.textContent = "🎓 Пройти аттестацию";
+        btn.onclick = async () => {
+            btn.disabled = true;
+            resultEl.innerHTML = `<div class="loading">Отправляем заявку учителю…</div>`;
+            try {
+                const result = await apiFetch("/api/certify", { method: "POST" });
+                resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Заявка отправлена (${result.price.toFixed(0)}₭ списано) — жди уведомления об исходе.</div>`;
+            } catch (e) {
+                btn.disabled = false;
+                resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+            }
+        };
+    }
     certCard.appendChild(btn);
     certCard.appendChild(resultEl);
     body.appendChild(certCard);
@@ -442,5 +464,49 @@ async function renderFactoryVoting(content, products) {
             }
         };
         btnContainer.appendChild(btn);
+    });
+}
+
+async function loadSwitchOptions(card) {
+    const container = card.querySelector("#switch-options");
+    container.innerHTML = `<div class="loading">Загружаем список…</div>`;
+    let data;
+    try {
+        data = await apiFetch("/api/work/switch_profession/options");
+    } catch (e) {
+        container.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+    if (!data.options.length) {
+        container.innerHTML = `<div class="profile-dim">Сейчас нет дефицитных профессий для смены.</div>`;
+        return;
+    }
+    container.innerHTML = "";
+    data.options.forEach((opt) => {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-secondary";
+        btn.style.marginBottom = "6px";
+        btn.textContent = `${opt.name} (обучение ${opt.training_price.toFixed(0)}₭)`;
+        btn.onclick = () => confirmSwitchProfession(card, opt);
+        container.appendChild(btn);
+    });
+}
+
+function confirmSwitchProfession(card, opt) {
+    showGamePopupWithContent(`🎓 Смена на «${opt.name}»`, (content) => {
+        content.innerHTML = `
+            <div class="profile-dim" style="margin-bottom:10px">Стоимость обучения: ${opt.training_price.toFixed(0)}₭. Деньги списываются сразу — заявка уходит случайному учителю. Если он справится, Ранг обнулится и начнёшь работать по новой профессии; если нет — деньги не возвращаются, повтор через час.</div>
+            <button class="btn" id="switch-confirm-btn">Подтвердить</button>
+        `;
+        content.querySelector("#switch-confirm-btn").onclick = async () => {
+            const btn = content.querySelector("#switch-confirm-btn");
+            btn.disabled = true;
+            try {
+                await apiFetch("/api/work/switch_profession", { method: "POST", body: { profession: opt.code } });
+                showGameStylePopup("🎓 Заявка отправлена!", "Учитель уже занимается твоим обучением — жди уведомления об исходе.");
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+        };
     });
 }

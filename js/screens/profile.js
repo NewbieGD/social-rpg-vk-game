@@ -109,14 +109,24 @@ export async function renderProfileScreen(root) {
     if (user.stage === "worker" && !isPresident) {
         const authorityLevel = Math.min(Math.floor(Number(user.authority)), 10);
         const authorityBonus = Math.max(0, authorityLevel - 1);
-        mainLines.push(`<div class="profile-row">🥋 Авторитет: ${authorityLevel}/10${authorityBonus > 0 ? ` (+${authorityBonus}% к шансу успеха на заявках)` : ""}</div>`);
+        mainLines.push(`<div class="profile-row">🥋 Ранг: ${authorityLevel}/10${authorityBonus > 0 ? ` (+${authorityBonus}% к шансу успеха на заявках)` : ""}</div>`);
+        const RANK_CONFIRMABLE = ["police", "medicine", "mchs", "construction", "education"];
         if (authorityLevel < 10) {
         const done = user.duty_successes_current_profession || 0;
         const total = user.authority_threshold || 4;
-        mainLines.push(`
-            <div class="profile-row profile-dim">До след. уровня Авторитета: ${done}/${total} успешных заявок</div>
-            <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (done / total) * 100)}%"></div></div>
-        `);
+        const barFull = done >= total;
+        if (barFull && RANK_CONFIRMABLE.includes(user.profession)) {
+            mainLines.push(`
+                <div class="profile-row profile-dim">Шкала Ранга заполнена — коллега должен подтвердить рост</div>
+                <div class="progress-bar"><div class="progress-bar-fill" style="width:100%"></div></div>
+                <button class="btn" id="rank-confirm-btn" style="margin-top:6px">🎖 Повысить ранг</button>
+            `);
+        } else {
+            mainLines.push(`
+                <div class="profile-row profile-dim">До след. уровня Ранга: ${done}/${total} успешных заявок</div>
+                <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (done / total) * 100)}%"></div></div>
+            `);
+        }
         }
     }
     mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
@@ -189,6 +199,10 @@ export async function renderProfileScreen(root) {
     root.querySelector("#profile-house-btn").onclick = () => showAssetPopup("🏠 Твой дом", user.has_house, user.house_skin, "houses", "Дом ещё не приобретён — купи «Квартиру» в Магазине.");
     root.querySelector("#profile-car-btn").onclick = () => showAssetPopup("🚗 Твоя машина", user.has_car, user.car_skin, "cars", "Машина ещё не приобретена — купи её в Магазине.");
     root.querySelector("#profile-cosmetics-btn").onclick = () => showCosmeticsPreviewPopup(root, user);
+    const rankConfirmBtn = root.querySelector("#rank-confirm-btn");
+    if (rankConfirmBtn) {
+        rankConfirmBtn.onclick = () => requestRankConfirm(root, rankConfirmBtn);
+    }
 
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
     // Bridge зависал (случается вне настоящего приложения VK), весь экран
@@ -477,6 +491,18 @@ const ASSET_SKIN_TITLES = {
     "house-mansion": "Особняк", "house-modern": "Современный дом", "house-castle": "Замок",
     "car-sport": "Спорткар", "car-lux": "Лимузин",
 };
+
+async function requestRankConfirm(root, btn) {
+    btn.disabled = true;
+    try {
+        await apiFetch("/api/duty/request_rank_confirm", { method: "POST" });
+        showGameStylePopup("🎖 Заявка отправлена!", "Запрос на подтверждение роста ранга ушёл случайному коллеге по твоей профессии — жди уведомления об ответе.");
+        await renderProfileScreen(root);
+    } catch (e) {
+        btn.disabled = false;
+        showGameStylePopup("❌ Не получилось", e.message);
+    }
+}
 
 function showCosmeticsPreviewPopup(root, user) {
     const frameText = user.active_frame ? (COSMETIC_NAMES[user.active_frame] || user.active_frame) : "не выбрана";

@@ -44,6 +44,7 @@
 | `sick.png` | 🦠 Болезнь |
 | `fire.png` | 🔥 Пожар |
 | `robbed.png` | 🚨 Ограблен(а) |
+| `wounded.png` | 🩸 Рана (от грабежа — снижает шанс успеха на заявках) |
 | `coffee.png` | ☕ Кофе |
 | `energy_drink.png` | ⚡ Энергетик |
 | `energy_crash.png` | 😵 Упадок сил |

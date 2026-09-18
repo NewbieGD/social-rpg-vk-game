@@ -168,7 +168,9 @@ async function buyItem(content, item, allItems, profile, mode) {
     try {
         const result = await apiFetch(path, { method: "POST" });
         let text = "";
-        if (result.needs_courier) {
+        if (result.house_dispatch) {
+            text = "🏗 Заявка на постройку отправлена Строителю — жди уведомления об исходе (деньги уже списаны, если Строитель провалит попытку, они не сгорят, просто запроси повтор в разделе Помощь).";
+        } else if (result.needs_courier) {
             text = result.courier_assigned
                 ? `Заказ передан курьеру, он должен подтвердить и привезти. Следи за 🔔 Уведомлениями.`
                 : `Свободных курьеров сейчас нет — доставят автоматически в течение часа.`;

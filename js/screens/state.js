@@ -41,7 +41,9 @@ export async function renderStateScreen(root) {
 
     root.querySelector("#stats-btn").onclick = () => loadCountryStats(root);
     root.querySelector("#history-toggle-btn").onclick = () => toggleHistorySection(root);
-    renderElections(root, elections);
+    // petition_vote (обращение представителя народа) теперь показывается
+    // во вкладке Чат, а не тут — см. js/screens/chat.js
+    renderElections(root, elections.filter((e) => e.type !== "petition_vote"));
     loadProtestStatus(root);
     wireRoleActions(root, profile);
     loadPublicReserveInfo(root);

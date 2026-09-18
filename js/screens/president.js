@@ -74,7 +74,7 @@ export async function renderPresidentDealsScreen(root) {
     };
     root.querySelector("#p-appoint").onclick = () => {
         showPicker(pickerArea, "На какой пост назначить?", options.minister_posts, (post) => {
-            const targetId = promptNumber("VK ID кандидата (Авторитет 5+ в нужной профессии):");
+            const targetId = promptNumber("VK ID кандидата (Ранг 5+ в нужной профессии):");
             if (targetId !== null) runAction(root, "/api/president/appoint_minister", { post, target_vk_id: targetId });
         });
     };
