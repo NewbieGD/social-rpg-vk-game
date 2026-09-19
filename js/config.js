@@ -2,7 +2,7 @@
 // адрес вашего API (тот, что получите после деплоя на Railway/другой хостинг).
 // Пока backend не задеплоен — оставьте как есть и тестируйте локально:
 // `uvicorn bot.main:app --reload` на своём компьютере, тогда адрес ниже верный.
-API_BASE_URL = "https://social-rpg-vk-api-production.up.railway.app";
+export const API_BASE_URL = "https://social-rpg-vk-api-production.up.railway.app";
 
 // Если true — при отсутствии настоящих launch-параметров VK показывается
 // простой экран «войти по номеру» вместо ошибки. ОБЯЗАТЕЛЬНО поставьте false
