@@ -2513,3 +2513,92 @@ body.fire-event-theme .bottom-nav {
     font-size: 13px;
     margin: 14px 0 10px;
 }
+
+/* ---------- Кнопка "!" — описание текущей профессии (js/screens/profile.js) ---------- */
+
+.profession-info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3a4568;
+    color: #ffb454;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+/* ---------- Магазин: строка баланса сверху (js/screens/shop.js) ---------- */
+
+.shop-balance-banner {
+    text-align: center;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    color: #f0d9a8;
+}
+
+/* ---------- Таблица вклада жителей в Рейтинг государства (js/screens/state.js) ---------- */
+
+.contribution-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+}
+.contribution-table th, .contribution-table td {
+    padding: 6px 4px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.contribution-name-cell {
+    cursor: pointer;
+    color: #8fd3ff;
+    text-align: left !important;
+}
+
+/* ---------- Мини-игра "Бюрократ" (js/screens/bureaucrat.js) ---------- */
+
+.bureaucrat-hud {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin: 10px 0;
+}
+.bureaucrat-doc-slot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
+    margin-bottom: 14px;
+}
+.bureaucrat-doc {
+    border: 3px solid;
+    border-radius: 10px;
+    padding: 14px 20px;
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    font-weight: 700;
+}
+.bureaucrat-trays {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.bureaucrat-tray {
+    border: 3px solid;
+    border-radius: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.04);
+    color: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.bureaucrat-tray:active {
+    transform: scale(0.96);
+}

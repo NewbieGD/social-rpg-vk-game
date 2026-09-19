@@ -28,47 +28,47 @@ async function loadRating(root) {
     const body = root.querySelector("#leaderboard-body");
     body.innerHTML = `<div class="loading">Загружаем…</div>`;
 
-    let rows;
+    let data;
     try {
-        rows = await apiFetch("/api/leaderboard/rating");
+        data = await apiFetch("/api/leaderboard/rating");
     } catch (e) {
         body.innerHTML = `<div class="error">${e.message}</div>`;
         return;
     }
 
-    renderRows(body, rows, (r, i) => ({
+    renderRows(body, data.items, (r, i) => ({
         title: `${medal(i)} ${nameOf(r)}${r.profession ? " — " + escapeHtml(r.profession) : ""}`,
         value: `⭐ ${r.rating.toFixed(1)}`,
         vkId: r.vk_id,
         movement: r.movement,
         cosmetics: r.cosmetics,
-    }));
+    }), data.my_rank);
 }
 
 async function loadDuels(root) {
     const body = root.querySelector("#leaderboard-body");
     body.innerHTML = `<div class="loading">Загружаем…</div>`;
 
-    let rows;
+    let data;
     try {
-        rows = await apiFetch("/api/duels/leaderboard");
+        data = await apiFetch("/api/duels/leaderboard");
     } catch (e) {
         body.innerHTML = `<div class="error">${e.message}</div>`;
         return;
     }
 
-    renderRows(body, rows, (r, i) => ({
+    renderRows(body, data.items, (r, i) => ({
         title: `${medal(i)} ${nameOf(r)}`,
         value: `⚔️ ${r.duel_wins}`,
         vkId: r.vk_id,
         movement: r.movement,
         cosmetics: r.cosmetics,
-    }));
+    }), data.my_rank);
 }
 
 const MOVEMENT_ICON = { up: '<span class="lb-move-up">▲</span>', down: '<span class="lb-move-down">▼</span>', same: '<span class="lb-move-same">–</span>' };
 
-function renderRows(body, rows, mapFn) {
+function renderRows(body, rows, mapFn, myRank = null) {
     if (rows.length === 0) {
         body.innerHTML = `<div class="card"><div class="subtitle">Пока никого в списке.</div></div>`;
         return;
@@ -90,6 +90,14 @@ function renderRows(body, rows, mapFn) {
         card.onclick = () => showLeaderboardProfileOverlay(info.vkId);
         body.appendChild(card);
     });
+    if (myRank) {
+        const rankRow = document.createElement("div");
+        rankRow.className = "profile-dim";
+        rankRow.style.textAlign = "center";
+        rankRow.style.marginTop = "10px";
+        rankRow.textContent = `Вы сейчас на ${myRank} месте — поднажмите, чтобы попасть в топ!`;
+        body.appendChild(rankRow);
+    }
 }
 
 function showLeaderboardProfileOverlay(vkId) {

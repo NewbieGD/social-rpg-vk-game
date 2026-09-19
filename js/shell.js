@@ -36,6 +36,7 @@ const BASE_NAV_ITEMS = [
 const CRIME_NAV_ITEM = { id: "crime", icon: "🚨", label: "Криминал", render: renderCrimeScreen };
 const PRISON_NAV_ITEM = { id: "prison", icon: "🔒", label: "Тюрьма", render: renderPrisonScreen };
 const PRESIDENT_NAV_ITEM = { id: "president", icon: "🎖", label: "Дела президентские", render: renderPresidentDealsScreen };
+const STUDENT_NAV_ITEM = { id: "work", icon: "🎓", label: "Учёба", render: renderWorkScreen };
 
 export async function renderShell(appRoot) {
     let isCriminal = false;
@@ -43,6 +44,7 @@ export async function renderShell(appRoot) {
     let hasLicense = false;
     let isArmy = false;
     let isPresident = false;
+    let isStudent = false;
     try {
         const profile = await apiFetch("/api/profile");
         isCriminal = profile.stage === "criminal";
@@ -50,6 +52,7 @@ export async function renderShell(appRoot) {
         hasLicense = profile.has_license;
         isArmy = !!profile.army_contract_active;
         isPresident = !!profile.is_president;
+        isStudent = profile.stage === "student";
     } catch (e) {
         // Профиль не получили — покажем меню без вкладки Криминал, сама вкладка
         // Профиль сообщит об ошибке подробнее при открытии.
@@ -66,6 +69,8 @@ export async function renderShell(appRoot) {
         navItems = navItems.map((item) => (item.id === "work" ? PRISON_NAV_ITEM : item));
     } else if (isCriminal) {
         navItems = navItems.map((item) => (item.id === "work" ? CRIME_NAV_ITEM : item));
+    } else if (isStudent) {
+        navItems = navItems.map((item) => (item.id === "work" ? STUDENT_NAV_ITEM : item));
     }
 
     // Права уже получены (экзамен сдан и права куплены) — вкладка больше не

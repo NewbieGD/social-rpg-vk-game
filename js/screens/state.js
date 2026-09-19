@@ -1,6 +1,9 @@
 import { apiFetch } from "../api.js";
 import { burstConfetti, playSuccessSound, shakeElement } from "../fx.js";
 import { showGameStylePopup } from "../gamePopup.js";
+import { startAutoRefresh } from "../autoRefresh.js";
+import { renderOtherProfile } from "./profile.js";
+import { renderBureaucratScreen } from "./bureaucrat.js";
 
 export async function renderStateScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -34,6 +37,7 @@ export async function renderStateScreen(root) {
     parts.push(`<div id="protest-card"></div>`);
     parts.push(renderRoleActionsCard(profile));
     if (isVor) parts.push(renderVorCard());
+    parts.push(`<div class="card" id="government-rating-card"><div class="loading">Загружаем…</div></div>`);
     parts.push(`<button class="btn btn-secondary" id="history-toggle-btn" style="margin-bottom:10px">📜 История правления</button><div id="history-section"></div>`);
     parts.push(`<div id="state-result"></div>`);
 
@@ -41,9 +45,16 @@ export async function renderStateScreen(root) {
 
     root.querySelector("#stats-btn").onclick = () => loadCountryStats(root);
     root.querySelector("#history-toggle-btn").onclick = () => toggleHistorySection(root);
+    loadGovernmentRating(root);
     // petition_vote (обращение представителя народа) теперь показывается
     // во вкладке Чат, а не тут — см. js/screens/chat.js
     renderElections(root, elections.filter((e) => e.type !== "petition_vote"));
+    // Автообновление списка голосований — если голосование закрылось или
+    // результат поменялся у другого игрока, видно без ручного обновления.
+    startAutoRefresh(root, async () => {
+        const fresh = await apiFetch("/api/elections");
+        renderElections(root, fresh.filter((e) => e.type !== "petition_vote"));
+    }, 8000);
     loadProtestStatus(root);
     wireRoleActions(root, profile);
     loadPublicReserveInfo(root);
@@ -275,6 +286,73 @@ async function loadPublicReserveInfo(root) {
     } catch (e) {
         el.innerHTML = "";
     }
+}
+
+async function showBureaucratFullScreen(root) {
+    root.innerHTML = "";
+    const backBtn = document.createElement("button");
+    backBtn.className = "btn btn-secondary";
+    backBtn.textContent = "🔙 Назад в Государство";
+    backBtn.onclick = () => renderStateScreen(root);
+    root.appendChild(backBtn);
+    const content = document.createElement("div");
+    root.appendChild(content);
+    await renderBureaucratScreen(content);
+}
+
+async function loadGovernmentRating(root) {
+    const card = root.querySelector("#government-rating-card");
+    let data;
+    try {
+        data = await apiFetch("/api/state/citizen_contribution");
+    } catch (e) {
+        card.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+    const pct = Math.min(100, (data.progress_within_level / data.progress_needed) * 100);
+    card.innerHTML = `
+        <div class="subtitle">🏛 Рейтинг государства: уровень ${data.government_level}</div>
+        <div class="profile-dim" style="margin-bottom:6px">${data.progress_within_level.toFixed(0)} / ${data.progress_needed} до следующего уровня${data.cosmetics_discount_pct > 0 ? ` · скидка на косметику: ${data.cosmetics_discount_pct}%` : ""}</div>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        <button class="btn btn-secondary" id="contribution-toggle-btn" style="margin-top:10px">👥 Вклад жителей</button>
+        <button class="btn" id="play-bureaucrat-btn" style="margin-top:6px">🗂 Играть в «Бюрократа»</button>
+        <div id="contribution-section"></div>
+    `;
+    card.querySelector("#contribution-toggle-btn").onclick = () => renderContributionTable(card, data);
+    card.querySelector("#play-bureaucrat-btn").onclick = () => showBureaucratFullScreen(root);
+}
+
+function renderContributionTable(card, data) {
+    const section = card.querySelector("#contribution-section");
+    if (section.innerHTML) {
+        section.innerHTML = "";
+        return;
+    }
+    const rows = data.leaderboard.map((r, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td class="contribution-name-cell" data-vkid="${r.vk_id}">${escapeHtmlState(r.name)}</td>
+            <td>${r.rating_contribution.toFixed(1)}</td>
+            <td>${r.game_contribution.toFixed(1)}</td>
+            <td><b>${r.total_contribution.toFixed(1)}</b></td>
+        </tr>
+    `).join("");
+    section.innerHTML = `
+        <table class="contribution-table">
+            <thead><tr><th>#</th><th>Игрок</th><th>От рейтинга</th><th>От игры</th><th>Итого</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        ${data.my_rank ? `<div class="profile-dim" style="margin-top:8px">Вы сейчас на ${data.my_rank} месте — поднажмите, чтобы попасть в топ-30!</div>` : ""}
+    `;
+    section.querySelectorAll(".contribution-name-cell").forEach((cell) => {
+        cell.onclick = () => renderOtherProfile(document.getElementById("app"), Number(cell.dataset.vkid));
+    });
+}
+
+function escapeHtmlState(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 async function loadCountryStats(root) {

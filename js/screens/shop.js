@@ -82,6 +82,7 @@ function renderShelves(root, items, profile, mode) {
             <div class="shop-sign ${isBlackMarket ? "shop-sign-black" : ""}">${isBlackMarket ? "🕶 ЧЁРНЫЙ ВХОД" : "ОТКРЫТО"}</div>
         </div>
         <div class="title">${isBlackMarket ? "🕶 Чёрный рынок" : "🛍 Магазин"}</div>
+        <div class="shop-balance-banner">💰 Твой баланс: <b>${Number(profile.balance).toFixed(2)}₭</b></div>
         <div class="subtitle">Нажми на товар на полке, чтобы узнать, что он даёт</div>
         ${isBlackMarket ? "" : `<button class="btn btn-secondary" id="my-deliveries-btn" style="margin-bottom:10px">📦 Что мне везут</button>`}
         <div id="shelves" class="shop-shelves"></div>

@@ -1,13 +1,19 @@
 import { apiFetch } from "../api.js";
 import { burstConfetti, playSuccessSound, playFailSound, shakeElement } from "../fx.js";
 import { renderOtherProfile } from "./profile.js";
+import { startAutoRefresh } from "../autoRefresh.js";
 
 export async function renderDuelsScreen(root) {
     root.innerHTML = `
         <div class="title">⚔️ Дуэли</div>
         <div class="card duel-challenge-card">
             <div class="duel-challenge-icon">⚔️</div>
-            <div class="subtitle">Соперника выбирает система случайно — из твоей же категории (граждане/преступники/чиновники). С одним и тем же игроком дуэль возможна только один раз за всё время.</div>
+            <div class="subtitle">Соперника выбирает система случайно — из твоей же категории (граждане/преступники/чиновники). С одним и тем же игроком — не больше 1 дуэли в день, а если он раз отклонил вызов, повторно вызвать его нельзя.</div>
+            <div class="profile-dim" style="margin:8px 0; line-height:1.5">
+                <b>Лимит на день:</b> 5 сыгранных дуэлей, которые ты сам инициировал, + 5 сыгранных, которые ты принял от других (отклонённые/непринятые в счёт не идут).<br>
+                <b>При победе:</b> получаешь 30₭ (или меньше, если у соперника меньше на балансе) и +1 к рейтингу — и то же самое теряет проигравший.<br>
+                <b>Риск для вещей:</b> победитель может забрать случайную вещь проигравшего (кроме той, что лежит в сейфе). Спасти вещь может одноразовый предмет «Замок», если он есть в инвентаре в момент дуэли.
+            </div>
             <button class="btn" id="challenge-btn">Вызвать случайного соперника</button>
             <div id="challenge-result"></div>
         </div>
@@ -24,6 +30,9 @@ export async function renderDuelsScreen(root) {
     root.querySelector("#challenge-btn").onclick = () => sendChallenge(root);
     await loadPending(root);
     await loadSent(root);
+    // Автообновление — если соперник уже сыграл, или его дуэль истекла, это
+    // видно само по себе, без ручного обновления страницы.
+    startAutoRefresh(root, () => Promise.all([loadPending(root), loadSent(root)]), 8000);
 }
 
 let vsCardCounter = 0;

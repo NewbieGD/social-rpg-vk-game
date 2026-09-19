@@ -2,6 +2,7 @@ import { apiFetch } from "../api.js";
 import { playMessageSound, playSuccessSound, playFailSound, burstConfetti } from "../fx.js";
 import { renderOtherProfile } from "./profile.js";
 import { showGameStylePopup } from "../gamePopup.js";
+import { startAutoRefresh } from "../autoRefresh.js";
 
 const POLL_INTERVAL_MS = 3000;
 const THIEF_CHECK_INTERVAL_MS = 10000;
@@ -113,6 +114,9 @@ async function renderPeoplesRepCard(root) {
     }
     await loadCandidates(container);
     await loadPetitionVote(container);
+    // Автообновление — если голосование по петиции закрылось, пока смотрели
+    // чат, это видно само, без ручного обновления страницы.
+    startAutoRefresh(container, () => loadPetitionVote(container), 8000);
 }
 
 async function loadPetitionVote(container) {

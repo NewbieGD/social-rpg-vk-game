@@ -7,6 +7,7 @@ import { renderInventoryScreen } from "./inventory.js";
 import { renderDutyScreen } from "./duty.js";
 import { renderDuelsScreen } from "./duels.js";
 import { renderCosmeticsScreen } from "./cosmetics.js";
+import { PROFESSION_INFO } from "../professionInfo.js";
 
 const COSMETIC_NAMES = {
     golden_name: "Золотое имя", gradient_name: "Градиентное имя", vip_badge: "Значок VIP",
@@ -77,7 +78,7 @@ export async function renderProfileScreen(root) {
     mainLines.push(`<div class="subtitle">${STAGE_NAMES[user.stage] || user.stage}</div>`);
 
     if (user.profession_name) {
-        mainLines.push(`<div class="profile-row">💼 ${isPresident ? "Ранее работал(а): " : ""}${escapeHtml(user.profession_name)}</div>`);
+        mainLines.push(`<div class="profile-row">💼 ${isPresident ? "Ранее работал(а): " : ""}${escapeHtml(user.profession_name)}${user.profession && !isPresident ? ` <span class="profession-info-btn" id="profession-info-btn">❗</span>` : ""}</div>`);
     }
     if (user.forced_from_profession_name) {
         mainLines.push(`<div class="profile-row profile-dim">⚠️ Президент принудительно сменил профессию — раньше был(а): ${escapeHtml(user.forced_from_profession_name)}</div>`);
@@ -203,6 +204,10 @@ export async function renderProfileScreen(root) {
     if (rankConfirmBtn) {
         rankConfirmBtn.onclick = () => requestRankConfirm(root, rankConfirmBtn);
     }
+    const professionInfoBtn = root.querySelector("#profession-info-btn");
+    if (professionInfoBtn) {
+        professionInfoBtn.onclick = () => showProfessionInfoDetails(user.profession, user.profession_name);
+    }
 
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
     // Bridge зависал (случается вне настоящего приложения VK), весь экран
@@ -229,7 +234,7 @@ export async function renderProfileScreen(root) {
 
     addProfileNavBtn(navCard, "nav-inventory.png", "🎒", "Инвентарь", () => showOverlayScreen(renderInventoryScreen));
     addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
-    addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen));
+    addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen), user.pending_duels_count || 0);
     addProfileNavBtn(navCard, "nav-cosmetics.png", "✨", "Косметика", () => showOverlayScreen(renderCosmeticsScreen));
     addProfileNavBtn(navCard, "nav-visitors.png", "👀", "Посетители", () => showOverlayScreen((el) => renderVisitorsOverlay(el)), user.new_visitors_count || 0);
     addProfileNavBtn(navCard, "nav-invite.png", "🔗", "Пригласить друга", () => showInviteLink(null, user.tg_id));
@@ -504,6 +509,15 @@ async function requestRankConfirm(root, btn) {
     }
 }
 
+function showProfessionInfoDetails(code, name) {
+    const info = PROFESSION_INFO[code];
+    showGamePopupWithContent(name, (content) => {
+        content.innerHTML = info
+            ? `<div class="profile-dim" style="margin-bottom:8px">${escapeHtml(info.summary)}</div>${info.details.map((d) => `<div class="profile-dim" style="font-size:13px;margin-bottom:4px">• ${escapeHtml(d)}</div>`).join("")}`
+            : `<div class="profile-dim">Описание пока не добавлено.</div>`;
+    });
+}
+
 function showCosmeticsPreviewPopup(root, user) {
     const frameText = user.active_frame ? (COSMETIC_NAMES[user.active_frame] || user.active_frame) : "не выбрана";
     const nameStyleText = user.active_name_style ? (COSMETIC_NAMES[user.active_name_style] || user.active_name_style) : "не выбран";
@@ -608,13 +622,18 @@ export async function renderOtherProfile(root, targetVkId) {
         <div class="card${p.is_president ? " profile-card-president" : ""}">
             ${photoHtml}
             <div class="title">👤 ${escapeHtml(displayName)}</div>
-            <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}</div>
+            <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
             <div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>
             <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>
             ${badges.length ? `<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>` : ""}
             <div id="vk-link-slot"></div>
         </div>
     `;
+
+    const otherProfessionInfoBtn = root.querySelector("#other-profession-info-btn");
+    if (otherProfessionInfoBtn) {
+        otherProfessionInfoBtn.onclick = () => showProfessionInfoDetails(p.profession, p.profession_name);
+    }
 
     const vkSlot = root.querySelector("#vk-link-slot");
     if (p.has_incognito) {

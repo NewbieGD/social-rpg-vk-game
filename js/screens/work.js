@@ -1,6 +1,7 @@
 import { apiFetch } from "../api.js";
 import { burstConfetti } from "../fx.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
+import { PROFESSION_INFO } from "../professionInfo.js";
 
 const REMOTE_PROFESSIONS = []; // раньше IT и Юриспруденция — обе профессии убраны из игры
 
@@ -180,9 +181,17 @@ async function requestExam(root, card, btn, resultEl) {
 
 const TYPE_LABELS = {
     police: "👮 Полиция", doctor: "🚑 Врач", firefighter: "🚒 Пожарный", teacher: "📚 Пересдача",
-    courier: "📦 Курьер", taxi: "🚕 Такси", it_fix: "🖥 IT", defense: "⚖️ Защита",
-    prosecution: "⚖️ Обвинение", repair: "🏗 Ремонт", graduation_exam: "📝 Выпускной экзамен",
+    courier: "📦 Курьер", taxi: "🚕 Такси", repair: "🏗 Ремонт дома", graduation_exam: "📝 Выпускной экзамен",
+    catch_thief_chat: "👮 Вор в чате", rank_confirm: "🎖 Подтверждение роста Ранга",
+    prescription: "💊 Рецепт на таблетки", rescue: "🚨 Спасение", home_repair: "🔧 Бытовая поломка",
+    build_house: "🏠 Постройка Квартиры", certify: "🎓 Аттестация", profession_switch: "🎓 Смена профессии",
+    duty_shift: "📋 Дежурство (назначено системой)", catastrophe_response: "🔥 Сдерживание катастрофы (назначено системой)",
+    gov_repair: "🏛 Ремонт гос. объекта (назначено системой)", extra_lesson: "📖 Доп. урок (назначено системой)",
 };
+
+// Эти типы назначаются СИСТЕМОЙ, а не другим игроком — у них нет настоящего
+// заявителя, поэтому "от ID 0" рядом с ними только сбивает с толку.
+const SYSTEM_ASSIGNED_TYPES = new Set(["duty_shift", "catastrophe_response", "gov_repair", "extra_lesson"]);
 
 const RESULT_LABELS = {
     recovered: "Вещь/деньги возвращены", caught: "Вор пойман", cured: "Вылечен(а)",
@@ -221,7 +230,9 @@ async function appendPendingRequestsCard(root, body) {
 
         const nameEl = document.createElement("div");
         nameEl.className = "shop-item-name";
-        nameEl.innerHTML = `<span class="work-new-badge">НОВОЕ</span> ${TYPE_LABELS[req.type] || req.type} от ID ${req.requester_vk_id}`;
+        const label = TYPE_LABELS[req.type] || req.type;
+        const sourceText = SYSTEM_ASSIGNED_TYPES.has(req.type) ? "" : ` от ID ${req.requester_vk_id}`;
+        nameEl.innerHTML = `<span class="work-new-badge">НОВОЕ</span> ${label}${sourceText}`;
         row.appendChild(nameEl);
 
         const btn = document.createElement("button");
@@ -493,8 +504,10 @@ async function loadSwitchOptions(card) {
 }
 
 function confirmSwitchProfession(card, opt) {
+    const info = PROFESSION_INFO[opt.code];
     showGamePopupWithContent(`🎓 Смена на «${opt.name}»`, (content) => {
         content.innerHTML = `
+            ${info ? `<div class="profile-dim" style="margin-bottom:6px">${escapeHtmlWork(info.summary)}</div><div style="margin-bottom:10px">${info.details.map((d) => `<div class="profile-dim" style="font-size:13px">• ${escapeHtmlWork(d)}</div>`).join("")}</div>` : ""}
             <div class="profile-dim" style="margin-bottom:10px">Стоимость обучения: ${opt.training_price.toFixed(0)}₭. Деньги списываются сразу — заявка уходит случайному учителю. Если он справится, Ранг обнулится и начнёшь работать по новой профессии; если нет — деньги не возвращаются, повтор через час.</div>
             <button class="btn" id="switch-confirm-btn">Подтвердить</button>
         `;
