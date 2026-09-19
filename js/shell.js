@@ -14,6 +14,7 @@ import { renderLicenseScreen } from "./screens/license.js";
 import { renderArmyScreen } from "./screens/army.js";
 import { renderModernizationScreen } from "./screens/modernization.js";
 import { renderRiotScreen } from "./screens/riot.js";
+import { renderBureaucratScreen } from "./screens/bureaucrat.js";
 import { renderNotificationsScreen } from "./screens/notifications.js";
 import { renderNationalEventScreen } from "./screens/nationalEvent.js";
 
@@ -30,6 +31,7 @@ const BASE_NAV_ITEMS = [
     { id: "license", icon: "🪪", label: "Права", render: renderLicenseScreen },
     { id: "army", icon: "🎖", label: "Армия", render: renderArmyScreen },
     { id: "modernization", icon: "🏗", label: "Модернизация", render: renderModernizationScreen },
+    { id: "bureaucrat", icon: "🗂", label: "Бюрократ", render: renderBureaucratScreen },
     { id: "riot", icon: "🔥", label: "Бунт", render: renderRiotScreen },
 ];
 

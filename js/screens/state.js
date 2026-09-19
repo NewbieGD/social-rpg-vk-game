@@ -3,7 +3,6 @@ import { burstConfetti, playSuccessSound, shakeElement } from "../fx.js";
 import { showGameStylePopup } from "../gamePopup.js";
 import { startAutoRefresh } from "../autoRefresh.js";
 import { renderOtherProfile } from "./profile.js";
-import { renderBureaucratScreen } from "./bureaucrat.js";
 
 export async function renderStateScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -288,23 +287,11 @@ async function loadPublicReserveInfo(root) {
     }
 }
 
-async function showBureaucratFullScreen(root) {
-    root.innerHTML = "";
-    const backBtn = document.createElement("button");
-    backBtn.className = "btn btn-secondary";
-    backBtn.textContent = "🔙 Назад в Государство";
-    backBtn.onclick = () => renderStateScreen(root);
-    root.appendChild(backBtn);
-    const content = document.createElement("div");
-    root.appendChild(content);
-    await renderBureaucratScreen(content);
-}
-
 async function loadGovernmentRating(root) {
     const card = root.querySelector("#government-rating-card");
     let data;
     try {
-        data = await apiFetch("/api/state/citizen_contribution");
+        data = await apiFetch("/api/citizen_contribution");
     } catch (e) {
         card.innerHTML = `<div class="error">${e.message}</div>`;
         return;
@@ -315,11 +302,10 @@ async function loadGovernmentRating(root) {
         <div class="profile-dim" style="margin-bottom:6px">${data.progress_within_level.toFixed(0)} / ${data.progress_needed} до следующего уровня${data.cosmetics_discount_pct > 0 ? ` · скидка на косметику: ${data.cosmetics_discount_pct}%` : ""}</div>
         <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
         <button class="btn btn-secondary" id="contribution-toggle-btn" style="margin-top:10px">👥 Вклад жителей</button>
-        <button class="btn" id="play-bureaucrat-btn" style="margin-top:6px">🗂 Играть в «Бюрократа»</button>
+        <div class="profile-dim" style="margin-top:6px">Сыграть в «Бюрократа» и внести свой вклад можно во вкладке 🗂 Бюрократ.</div>
         <div id="contribution-section"></div>
     `;
     card.querySelector("#contribution-toggle-btn").onclick = () => renderContributionTable(card, data);
-    card.querySelector("#play-bureaucrat-btn").onclick = () => showBureaucratFullScreen(root);
 }
 
 function renderContributionTable(card, data) {
