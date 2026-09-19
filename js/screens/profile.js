@@ -132,6 +132,7 @@ export async function renderProfileScreen(root) {
     }
     mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
     mainLines.push(`<div class="profile-row">⚔️ Дуэли: ${user.duel_wins || 0} побед / ${user.duel_losses || 0} поражений</div>`);
+    mainLines.push(`<div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${user.government_rating_level || 0}</div>`);
     mainLines.push(`<div class="profile-row">🏛 Налог в стране: ${(user.tax_rate * 100).toFixed(1)}%</div>`);
 
     const badges = [];
@@ -625,6 +626,7 @@ export async function renderOtherProfile(root, targetVkId) {
             <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
             <div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>
             <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>
+            <div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${p.government_rating_level || 0}</div>
             ${badges.length ? `<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>` : ""}
             <div id="vk-link-slot"></div>
         </div>

@@ -94,6 +94,7 @@ function renderCountryCard(state) {
             <div class="gov-stat-row"><span class="gov-stat-label">🛡 Контроль власти</span><span class="gov-stat-value">${state.corruption_control}</span></div>
             <div class="gov-stat-row"><span class="gov-stat-label">🔪 Ликвидировано Воров</span><span class="gov-stat-value">${state.vors_eliminated}</span></div>
             <div class="gov-stat-row"><span class="gov-stat-label">📈 Рейтинг президента</span><span class="gov-stat-value gov-stat-value-gold">${state.president_rating.toFixed(1)}</span></div>
+            <div class="gov-stat-row"><span class="gov-stat-label">🌍 Рейтинг государства</span><span class="gov-stat-value gov-stat-value-gold">Уровень ${state.government_rating_level}</span></div>
             <div class="gov-stat-row" id="reserve-info-public"><span class="gov-stat-label">🏦 ЗРС</span><span class="gov-stat-value">Загружаем…</span></div>
         </div>
     `;
