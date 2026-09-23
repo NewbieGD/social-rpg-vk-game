@@ -2607,22 +2607,86 @@ body.fire-event-theme .bottom-nav {
 
 .heist-field {
     position: relative;
-    height: 260px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.04);
+    height: 280px;
+    border-radius: 14px;
     overflow: hidden;
-    margin-top: 8px;
+    margin-top: 10px;
+    border: 2px solid rgba(255,255,255,0.1);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.35);
+}
+.heist-field-thief {
+    background: radial-gradient(circle at 30% 20%, rgba(255,209,102,0.18), rgba(20,20,10,0.5) 70%),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 10px, transparent 10px 20px);
+}
+.heist-field-police {
+    background: radial-gradient(circle at 30% 20%, rgba(94,169,255,0.18), rgba(10,15,25,0.5) 70%),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 10px, transparent 10px 20px);
 }
 .heist-target {
     position: absolute;
-    font-size: 30px;
+    font-size: 36px;
     cursor: pointer;
     user-select: none;
-    animation: heist-pop 0.15s ease-out;
+    animation: heist-pop 0.18s ease-out;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    transition: transform 0.08s ease;
+}
+.heist-target:active {
+    transform: scale(0.85);
 }
 @keyframes heist-pop {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+}
+.heist-float-score {
+    position: absolute;
+    font-weight: 700;
+    font-size: 20px;
+    color: #ffd166;
+    pointer-events: none;
+    animation: heist-float-up 0.7s ease-out forwards;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+.heist-field-police .heist-float-score {
+    color: #7ec8ff;
+}
+@keyframes heist-float-up {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-40px); opacity: 0; }
+}
+.heist-hud-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 8px;
+}
+.heist-timer-ring {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+}
+.heist-prep-clock {
+    font-size: 32px;
+    font-weight: 700;
+    text-align: center;
+    margin: 14px 0;
+    letter-spacing: 1px;
+}
+.heist-vs-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+.heist-vs-side {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
 }
 
 /* ---------- Список вербовки (js/screens/recruitment.js) ---------- */

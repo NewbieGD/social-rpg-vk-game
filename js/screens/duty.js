@@ -84,7 +84,7 @@ async function sendRequest(root, path) {
     resultEl.innerHTML = `<div class="loading">Отправляем заявку…</div>`;
     try {
         const result = await apiFetch(path, { method: "POST" });
-        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Заявка отправлена специалисту (ID ${result.professional_vk_id}), жди ответа.</div>`;
+        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Заявка отправлена ${result.is_intern ? "стажёру-студенту (шансы на успех ниже)" : "специалисту"} (ID ${result.professional_vk_id}), жди ответа.</div>`;
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
     }
@@ -100,7 +100,7 @@ async function loadHeistPoliceCard(root) {
         return;
     }
     if (!status.active) {
-        card.innerHTML = "";
+        await loadHeistScaleBarForPolice(card);
         return;
     }
     card.innerHTML = `
@@ -118,4 +118,20 @@ async function loadHeistPoliceCard(root) {
         root.appendChild(content);
         renderHeistScreen(content);
     };
+}
+
+async function loadHeistScaleBarForPolice(card) {
+    let scale;
+    try {
+        scale = await apiFetch("/api/heist/scale_status");
+    } catch (e) {
+        card.innerHTML = "";
+        return;
+    }
+    const pct = Math.min(100, Math.round((scale.progress / scale.threshold) * 100));
+    card.innerHTML = `
+        <div class="subtitle">🛡 Воры готовят крупное ограбление</div>
+        <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны — чем ближе к порогу, тем скорее начнётся «Защита банка»</div>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    `;
 }

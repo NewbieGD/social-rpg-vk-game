@@ -8,10 +8,22 @@ const ITEM_ICONS = {
     fire_insurance: "🧯", legal_insurance: "⚖️", stats_subscription: "📊",
     seller_license: "🤝", candidate: "🗳", balaclava: "🕶", fake_passport: "🛂",
     blat: "🫱", lock: "🔐", license: "🪪",
+    thief_note: "🕵️", recruitment_list: "📋", stash: "🗝",
 };
 
 function iconFor(code) {
     return ITEM_ICONS[code] || "📦";
+}
+
+async function loadStashBanner(root) {
+    const el = root.querySelector("#stash-balance-banner");
+    if (!el) return;
+    try {
+        const status = await apiFetch("/api/stash/status");
+        el.innerHTML = `<div class="shop-balance-banner" style="opacity:0.85">🗝 Баланс тайника: <b>${status.total.toFixed(2)}₭</b>${status.matured > 0 ? ` (доступно к выводу: ${status.matured.toFixed(2)}₭)` : ""}</div>`;
+    } catch (e) {
+        // не критично — просто не покажем в этот раз
+    }
 }
 
 export async function renderShopScreen(root) {
@@ -27,6 +39,7 @@ export async function renderShopScreen(root) {
 
     renderShelves(root, items, profile, "shop");
     checkNewArrivals();
+    if (profile.stage === "criminal") loadStashBanner(root);
 }
 
 async function checkNewArrivals() {
@@ -51,6 +64,7 @@ async function renderBlackMarket(root, profile) {
         return;
     }
     renderShelves(root, items, profile, "blackmarket");
+    if (profile.stage === "criminal") loadStashBanner(root);
 }
 
 async function showMyDeliveriesPopup() {
@@ -83,6 +97,7 @@ function renderShelves(root, items, profile, mode) {
         </div>
         <div class="title">${isBlackMarket ? "🕶 Чёрный рынок" : "🛍 Магазин"}</div>
         <div class="shop-balance-banner">💰 Твой баланс: <b>${Number(profile.balance).toFixed(2)}₭</b></div>
+        <div id="stash-balance-banner"></div>
         <div class="subtitle">Нажми на товар на полке, чтобы узнать, что он даёт</div>
         ${isBlackMarket ? "" : `<button class="btn btn-secondary" id="my-deliveries-btn" style="margin-bottom:10px">📦 Что мне везут</button>`}
         <div id="shelves" class="shop-shelves"></div>

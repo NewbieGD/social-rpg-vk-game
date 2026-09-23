@@ -132,6 +132,7 @@ export async function renderProfileScreen(root) {
     }
     if (user.stage === "criminal") {
         mainLines.push(`<div class="profile-row">🔫 Авторитет: ${Number(user.authority).toFixed(2)}/100</div>`);
+        mainLines.push(`<div class="profile-dim" style="margin-bottom:4px">При 100 можно баллотироваться в Боссы Мафии и в депутаты (президенты).</div>`);
     } else {
         mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
     }
