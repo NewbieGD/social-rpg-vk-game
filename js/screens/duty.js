@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { renderHeistScreen } from "./heist.js";
 
 const REQUEST_BUTTONS = [
     { label: "🚑 Вызвать скорую (болезнь или рана)", path: "/api/duty/ambulance" },
@@ -26,6 +27,7 @@ export async function renderDutyScreen(root) {
             <div id="request-buttons"></div>
             <div id="request-result"></div>
         </div>
+        <div class="card" id="heist-police-link-card"></div>
     `;
 
     let profile = {};
@@ -33,6 +35,10 @@ export async function renderDutyScreen(root) {
         profile = await apiFetch("/api/profile");
     } catch (e) {
         // не критично — просто не покажем кулдауны в этот раз
+    }
+
+    if (profile.profession === "police" && profile.stage === "worker") {
+        await loadHeistPoliceCard(root);
     }
 
     const btnContainer = root.querySelector("#request-buttons");
@@ -82,4 +88,34 @@ async function sendRequest(root, path) {
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
     }
+}
+
+async function loadHeistPoliceCard(root) {
+    const card = root.querySelector("#heist-police-link-card");
+    let status;
+    try {
+        status = await apiFetch("/api/heist/status");
+    } catch (e) {
+        card.innerHTML = "";
+        return;
+    }
+    if (!status.active) {
+        card.innerHTML = "";
+        return;
+    }
+    card.innerHTML = `
+        <div class="subtitle">🛡 Воры готовят «Ограбление по крупному» — банк страны нужно защитить!</div>
+        <button class="btn" id="heist-police-open-btn">Перейти к защите банка</button>
+    `;
+    card.querySelector("#heist-police-open-btn").onclick = () => {
+        root.innerHTML = "";
+        const backBtn = document.createElement("button");
+        backBtn.className = "btn btn-secondary";
+        backBtn.textContent = "🔙 Назад в Помощь";
+        backBtn.onclick = () => renderDutyScreen(root);
+        root.appendChild(backBtn);
+        const content = document.createElement("div");
+        root.appendChild(content);
+        renderHeistScreen(content);
+    };
 }

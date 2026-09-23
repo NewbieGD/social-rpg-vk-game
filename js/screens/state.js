@@ -24,6 +24,7 @@ export async function renderStateScreen(root) {
 
     const parts = [];
     parts.push(renderCountryCard(state));
+    parts.push(`<div class="card" id="role-call-card"></div>`);
     parts.push(`
         <div class="gov-action-card">
             <div class="gov-section-title">📊 Статистика страны</div>
@@ -34,7 +35,7 @@ export async function renderStateScreen(root) {
     `);
     parts.push(`<div id="elections-card"></div>`);
     parts.push(`<div id="protest-card"></div>`);
-    parts.push(renderRoleActionsCard(profile));
+    parts.push(renderRoleActionsCard(profile, state));
     if (isVor) parts.push(renderVorCard());
     parts.push(`<div class="card" id="government-rating-card"><div class="loading">Загружаем…</div></div>`);
     parts.push(`<button class="btn btn-secondary" id="history-toggle-btn" style="margin-bottom:10px">📜 История правления</button><div id="history-section"></div>`);
@@ -45,6 +46,7 @@ export async function renderStateScreen(root) {
     root.querySelector("#stats-btn").onclick = () => loadCountryStats(root);
     root.querySelector("#history-toggle-btn").onclick = () => toggleHistorySection(root);
     loadGovernmentRating(root);
+    loadRoleCallStatus(root);
     // petition_vote (обращение представителя народа) теперь показывается
     // во вкладке Чат, а не тут — см. js/screens/chat.js
     renderElections(root, elections.filter((e) => e.type !== "petition_vote"));
@@ -147,7 +149,7 @@ function formatDeadline(isoString) {
 }
 
 const ELECTION_LABELS = {
-    vor: "👑 Выборы Вора в законе", deputy: "🏛 Выборы депутатов", president: "🎖 Выборы президента",
+    vor: "👑 Выборы Босса Мафии", deputy: "🏛 Выборы депутатов", president: "🎖 Выборы президента",
     president_runoff: "🎖 Второй тур выборов президента", impeachment: "⚖️ Импичмент",
     impeachment_auto: "⚖️ Автоматический импичмент (после провала бунта)", coup: "⚔️ Путч",
     hunt_vor: "🎯 Поддержать охоту на Вора", riot_vote: "🔥 Голосование за бунт",
@@ -176,14 +178,25 @@ async function castVote(root, electionId, choice, btn, wrap) {
     }
 }
 
-function renderRoleActionsCard(profile) {
+function renderRoleActionsCard(profile, state) {
     if (profile.is_deputy) {
         return `<div class="gov-action-card"><div class="gov-section-title">🏛 Ты депутат</div><button class="btn" id="impeach-btn">⚖️ Подписать импичмент президенту</button></div>`;
     }
-    if (profile.stage !== "criminal") {
-        return `<div class="gov-action-card"><div class="gov-section-title">🗳️ Стать депутатом</div><div class="profile-dim" style="margin-bottom:10px">Нужен Рейтинг 100 и предмет «Кандидат на выборы» (из магазина).</div><button class="btn" id="register-deputy-btn">🗳️ Выдвинуться в депутаты</button></div>`;
+    if (profile.stage === "criminal") {
+        const hasEnoughAuthority = Number(profile.authority) >= 100;
+        const hasBoss = !!(state && state.boss_mafia);
+        return `
+            <div class="gov-action-card">
+                <div class="gov-section-title">🗳️ Стать депутатом</div>
+                <div class="profile-dim" style="margin-bottom:10px">
+                    Нужен Авторитет 100 и предмет «Кандидат на выборы» (из магазина).
+                    ${hasBoss ? " Пока есть действующий Босс Мафии, ещё нужно его разрешение — договорись в воровском чате." : " Пока Босс Мафии не выбран — можно баллотироваться свободно."}
+                </div>
+                <button class="btn" id="register-deputy-btn" ${hasEnoughAuthority ? "" : "disabled"}>🗳️ Выдвинуться в депутаты</button>
+            </div>
+        `;
     }
-    return "";
+    return `<div class="gov-action-card"><div class="gov-section-title">🗳️ Стать депутатом</div><div class="profile-dim" style="margin-bottom:10px">Нужен Рейтинг хотя бы 20 и место в топ-50 игроков страны, плюс предмет «Кандидат на выборы» (из магазина).</div><button class="btn" id="register-deputy-btn">🗳️ Выдвинуться в депутаты</button></div>`;
 }
 
 function wireRoleActions(root, profile) {
@@ -288,6 +301,41 @@ async function loadPublicReserveInfo(root) {
     }
 }
 
+async function loadRoleCallStatus(root) {
+    const card = root.querySelector("#role-call-card");
+    if (!card) return;
+    let status;
+    try {
+        status = await apiFetch("/api/president/role_call/status");
+    } catch (e) {
+        return;
+    }
+    if (!status.active) {
+        card.innerHTML = "";
+        return;
+    }
+
+    const rewardText = status.reward_type === "money" ? `${status.reward_amount.toFixed(0)}₭` : `+${status.reward_amount.toFixed(0)} к Рейтингу`;
+    card.innerHTML = `
+        <div class="gov-section-title">📢 Набор добровольцев: ${escapeHtmlState(status.profession_name)}</div>
+        <div class="profile-dim" style="margin-bottom:8px">Награда за отклик — ${rewardText}. Заполнено ${status.filled_slots} / ${status.max_slots} мест.</div>
+        <button class="btn" id="role-call-respond-btn">🙋 Откликнуться</button>
+        <div id="role-call-result"></div>
+        <div class="profile-dim" style="margin-top:8px">${status.respondents.length ? "Уже откликнулись: " + status.respondents.map((r) => escapeHtmlState(r.username ? "@" + r.username : "ID " + r.vk_id)).join(", ") : "Пока никто не откликнулся."}</div>
+    `;
+    card.querySelector("#role-call-respond-btn").onclick = async () => {
+        const resultEl = card.querySelector("#role-call-result");
+        resultEl.innerHTML = `<div class="loading">Отправляем отклик…</div>`;
+        try {
+            await apiFetch("/api/president/role_call/respond", { method: "POST" });
+            resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Ты откликнулся(лась)!</div>`;
+            await loadRoleCallStatus(root);
+        } catch (e) {
+            resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+        }
+    };
+}
+
 async function loadGovernmentRating(root) {
     const card = root.querySelector("#government-rating-card");
     let data;
@@ -369,7 +417,7 @@ async function loadCountryStats(root) {
             </div>
             <div class="profile-row">🎖 Президент: ${s.president ? escapeHtml(s.president) : "не избран"}</div>
             <div class="profile-row">💰 Налог: ${(s.tax_rate * 100).toFixed(1)}%</div>
-            <div class="profile-row">👑 Вор в законе: ${s.vor_present ? "есть" : "свободный трон"}</div>
+            <div class="profile-row">👑 Босс Мафии: ${s.vor_present ? "есть" : "свободный трон"}</div>
             <div class="profile-row" style="color:#ffd873">🏆 Богатейший житель: ${s.richest_username ? escapeHtml(s.richest_username) : (s.richest_vk_id ? "ID " + s.richest_vk_id : "—")} (${Number(s.richest_balance).toFixed(0)}₭)</div>
             <div class="profile-row profile-dim">💵 Средний баланс по стране: ${Number(s.avg_balance).toFixed(0)}₭ · ⭐ Средний рейтинг: ${s.avg_rating}</div>
             <div class="profile-row profile-dim">👮 Полиция: ${s.police_count} · 🚒 МЧС: ${s.mchs_count} · 🚑 Врачи: ${s.doctor_count} · 📚 Преподаватели: ${s.teacher_count}</div>
@@ -396,7 +444,7 @@ async function runAction(root, path, body, method = "POST") {
 function renderVorCard() {
     return `
         <div class="gov-action-card">
-            <div class="gov-section-title" style="color:#ff6b81">👑 Ты Вор в законе</div>
+            <div class="gov-section-title" style="color:#ff6b81">👑 Ты Босс Мафии</div>
             <button class="gov-vote-btn" id="v-pardon">🛡 Помиловать бандита</button>
             <button class="gov-vote-btn" id="v-bribe">💰 Подкупить чиновника (1000₭)</button>
             <button class="btn" id="v-assassinate" style="margin-top:6px">💀 Покушение на Президента</button>

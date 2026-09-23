@@ -85,6 +85,37 @@ async function renderOutcome(root, result) {
         return;
     }
 
+    if (result.outcome === "worker") {
+        root.innerHTML = `
+            <div class="exam-paper">
+                <div class="exam-outcome-card">
+                    <div class="exam-outcome-icon">💼</div>
+                    <div class="exam-outcome-score">Экзамен сдан: ${result.score}/100</div>
+                    <div class="exam-outcome-text">Ты сразу приступаешь к работе: <b>${escapeHtml(result.profession_name)}</b>.</div>
+                    <button class="btn" onclick="location.reload()">Продолжить</button>
+                </div>
+            </div>
+        `;
+        playSuccessSound();
+        burstConfetti(root.querySelector(".exam-paper"), 36);
+        return;
+    }
+
+    if (result.outcome === "criminal_offer_forced") {
+        root.innerHTML = `
+            <div class="exam-paper">
+                <div class="exam-outcome-card">
+                    <div class="exam-outcome-icon">🕶</div>
+                    <div class="exam-outcome-score">Экзамен окончен: ${result.score}/100</div>
+                    <div class="exam-outcome-text">${escapeHtml(result.narrative)}</div>
+                    <button class="btn" onclick="location.reload()">Продолжить</button>
+                </div>
+            </div>
+        `;
+        playFailSound();
+        return;
+    }
+
     if (result.outcome === "choosing") {
         root.innerHTML = `
             <div class="exam-paper">

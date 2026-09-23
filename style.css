@@ -2602,3 +2602,53 @@ body.fire-event-theme .bottom-nav {
 .bureaucrat-tray:active {
     transform: scale(0.96);
 }
+
+/* ---------- Крупное ограбление / Защита банка (js/screens/heist.js) ---------- */
+
+.heist-field {
+    position: relative;
+    height: 260px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    overflow: hidden;
+    margin-top: 8px;
+}
+.heist-target {
+    position: absolute;
+    font-size: 30px;
+    cursor: pointer;
+    user-select: none;
+    animation: heist-pop 0.15s ease-out;
+}
+@keyframes heist-pop {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- Список вербовки (js/screens/recruitment.js) ---------- */
+
+.crime-candidate-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    gap: 8px;
+}
+.crime-candidate-name {
+    flex: 1;
+}
+
+/* ---------- Простое текстовое поле ввода (js/screens/crime.js и др.) ---------- */
+
+.text-input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: inherit;
+    font-size: 14px;
+    margin-top: 4px;
+    box-sizing: border-box;
+}

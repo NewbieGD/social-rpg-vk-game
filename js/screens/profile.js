@@ -130,7 +130,11 @@ export async function renderProfileScreen(root) {
         }
         }
     }
-    mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
+    if (user.stage === "criminal") {
+        mainLines.push(`<div class="profile-row">🔫 Авторитет: ${Number(user.authority).toFixed(2)}/100</div>`);
+    } else {
+        mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
+    }
     mainLines.push(`<div class="profile-row">⚔️ Дуэли: ${user.duel_wins || 0} побед / ${user.duel_losses || 0} поражений</div>`);
     mainLines.push(`<div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${user.government_rating_level || 0}</div>`);
     mainLines.push(`<div class="profile-row">🏛 Налог в стране: ${(user.tax_rate * 100).toFixed(1)}%</div>`);
@@ -141,7 +145,7 @@ export async function renderProfileScreen(root) {
     if (user.founder_number) badges.push(`🏆 Основатель города №${user.founder_number}`);
     if (user.is_deputy && !isPresident) badges.push(`🏛 Депутат`);
     if (user.is_minister) badges.push(`🎩 ${user.minister_post_name}`);
-    if (user.is_vor) badges.push(`👑 Вор в законе`);
+    if (user.is_vor) badges.push(`👑 Босс Мафии`);
     if (badges.length) {
         mainLines.push(`<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>`);
     }
@@ -209,6 +213,7 @@ export async function renderProfileScreen(root) {
     if (professionInfoBtn) {
         professionInfoBtn.onclick = () => showProfessionInfoDetails(user.profession, user.profession_name);
     }
+    await checkRecruitmentOffer(root);
 
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
     // Bridge зависал (случается вне настоящего приложения VK), весь экран
@@ -510,6 +515,50 @@ async function requestRankConfirm(root, btn) {
     }
 }
 
+async function checkRecruitmentOffer(root) {
+    let data;
+    try {
+        data = await apiFetch("/api/recruitment/my_offer");
+    } catch (e) {
+        return;
+    }
+    if (!data.has_offer) return;
+
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.style.marginTop = "6px";
+    btn.textContent = "✉️ ВАМ ЗАПИСКА ОТ ВОРА";
+    btn.onclick = () => showRecruitmentOfferPopup(root, data.offer_id);
+    const mainCard = root.querySelector(".card");
+    if (mainCard) mainCard.appendChild(btn);
+}
+
+function showRecruitmentOfferPopup(root, offerId) {
+    showGamePopupWithContent("✉️ Записка от вора", (content) => {
+        content.innerHTML = `
+            <div class="profile-dim" style="margin-bottom:8px">Один из воров хотел бы предложить вам присоединиться к ним.</div>
+            <div class="profile-dim" style="font-size:13px;margin-bottom:4px">• Заработок — карманные кражи и ограбления вместо обычной почасовой работы, без стабильного дохода.</div>
+            <div class="profile-dim" style="font-size:13px;margin-bottom:4px">• Риск — можно попасть в тюрьму, если жертва узнает тебя и полиция поймает.</div>
+            <div class="profile-dim" style="font-size:13px;margin-bottom:8px">• Свой путь роста — Авторитет вместо Рейтинга, можно стать Боссом Мафии.</div>
+            <button class="btn" id="offer-accept-btn">Принять</button>
+            <button class="btn btn-secondary" id="offer-decline-btn">Отказаться</button>
+            <div id="offer-result"></div>
+        `;
+        const respond = async (accept) => {
+            const resultEl = content.querySelector("#offer-result");
+            resultEl.innerHTML = `<div class="loading">…</div>`;
+            try {
+                await apiFetch("/api/recruitment/respond_offer", { method: "POST", body: { offer_id: offerId, accept } });
+                resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Готово!${accept ? " Обновите страницу, чтобы увидеть новую роль." : ""}</div>`;
+            } catch (e) {
+                resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+            }
+        };
+        content.querySelector("#offer-accept-btn").onclick = () => respond(true);
+        content.querySelector("#offer-decline-btn").onclick = () => respond(false);
+    });
+}
+
 function showProfessionInfoDetails(code, name) {
     const info = PROFESSION_INFO[code];
     showGamePopupWithContent(name, (content) => {
@@ -614,7 +663,7 @@ export async function renderOtherProfile(root, targetVkId) {
     if (p.founder_number) badges.push(`🏆 Основатель города №${p.founder_number}`);
     if (p.is_deputy) badges.push("🏛 Депутат");
     if (p.is_minister) badges.push(`🎩 ${p.minister_post_name}`);
-    if (p.is_vor) badges.push("👑 Вор в законе");
+    if (p.is_vor) badges.push("👑 Босс Мафии");
 
     const photoHtml = p.vk_photo_url ? `<img src="${p.vk_photo_url}" class="oko-clicker-photo" style="width:64px;height:64px;margin-bottom:8px" alt="">` : "";
     const displayName = p.vk_first_name || (p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id);
@@ -624,7 +673,7 @@ export async function renderOtherProfile(root, targetVkId) {
             ${photoHtml}
             <div class="title">👤 ${escapeHtml(displayName)}</div>
             <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
-            <div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>
+            ${p.stage === "criminal" ? `<div class="profile-row">🔫 Авторитет: ${p.authority.toFixed(2)}/100</div>` : `<div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>`}
             <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>
             <div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${p.government_rating_level || 0}</div>
             ${badges.length ? `<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>` : ""}

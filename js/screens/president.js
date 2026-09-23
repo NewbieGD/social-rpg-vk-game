@@ -10,14 +10,15 @@ export async function renderPresidentDealsScreen(root) {
             <button class="option-btn" id="p-tax">💰 Установить налог</button>
             <button class="option-btn" id="p-boost">📈 Надбавка профессии</button>
             <button class="option-btn" id="p-force">👷 Принудительное назначение</button>
+            <button class="option-btn" id="p-role-call">📢 Объявить набор добровольцев (на дефицитную профессию)</button>
             <button class="option-btn" id="p-appoint">🎖 Назначить министра</button>
             <button class="option-btn" id="p-dismiss">🚫 Снять министра</button>
             <button class="option-btn" id="p-treasury">💸 Раздать Госбюджет</button>
             <button class="option-btn" id="p-rename">✏️ Сменить название страны (голосование)</button>
             <button class="option-btn" id="p-flag">🚩 Предложить флаг страны (голосование)</button>
-            <button class="option-btn" id="p-hunt">🎯 Начать охоту на Вора</button>
+            <button class="option-btn" id="p-hunt">🎯 Начать охоту на Босса Мафии</button>
             <button class="option-btn" id="p-restock">📦 Пополнить склад (страховки/подписка/лицензия/кандидат/спортзал)</button>
-            <button class="option-btn" id="p-remove">🔫 Убрать Вора (после охоты)</button>
+            <button class="option-btn" id="p-remove">🔫 Убрать Босса Мафии (после охоты)</button>
             <button class="option-btn" id="p-army-rate">🎖 Изменить ставку армии</button>
             <button class="option-btn" id="p-army-disband">💣 Расформировать армию</button>
             <div id="president-result"></div>
@@ -70,6 +71,21 @@ export async function renderPresidentDealsScreen(root) {
     root.querySelector("#p-force").onclick = () => {
         showPicker(pickerArea, "В какую профессию принудительно перевести?", options.force_assign_professions, (profession) => {
             runAction(root, "/api/president/force_assign", { profession });
+        });
+    };
+    root.querySelector("#p-role-call").onclick = () => {
+        if (options.shortage_professions.length === 0) {
+            root.querySelector("#president-result").innerHTML = `<div class="error">Сейчас нет профессий с реальным дефицитом — объявлять не на что.</div>`;
+            return;
+        }
+        showPicker(pickerArea, "На какую дефицитную профессию объявить набор?", options.shortage_professions, (profession) => {
+            showPicker(pickerArea, "Чем наградить откликнувшихся?", [
+                { code: "money", name: "💰 Разовая выплата из казны" },
+                { code: "rating", name: "⭐ Прибавка к Рейтингу" },
+            ], (rewardType) => {
+                const amount = promptNumber(rewardType === "money" ? "Сколько ₭ каждому откликнувшемуся (казна должна потянуть на все 5)?" : "Сколько баллов Рейтинга каждому?");
+                if (amount !== null) runAction(root, "/api/president/role_call/start", { profession, reward_type: rewardType, reward_amount: amount });
+            });
         });
     };
     root.querySelector("#p-appoint").onclick = () => {
