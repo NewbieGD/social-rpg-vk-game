@@ -1,20 +1,915 @@
-const ProfileScreen = {
-    render(container) {
-        container.innerHTML = `
-            <div class="city-card">
-                <h2>👤 Паспорт Гражданина</h2>
-                <p><b>Имя:</b> ${GameState.user.name}</p>
-                <p><b>Профессия / Статус:</b> ${GameState.user.job} (${GameState.user.role})</p>
-                <p><b>Группировка:</b> ${GameState.user.gang}</p>
-                <p><b>Личный баланс:</b> ${GameState.user.money} 💵</p>
-                <p><b>Авторитет в городе:</b> ${GameState.user.authority} ⭐</p>
-                <button class="city-btn" onclick="ProfileScreen.rest()">Отдохнуть в квартире (+50 ⚡)</button>
-            </div>
-        `;
-    },
-    rest() {
-        GameState.user.energy = 100;
-        App.updateHeader();
-        GameAPI.showPopup("Отдых", "Вы выспались в своей квартире. Энергия полностью восстановлена!");
-    }
+import { apiFetch, clearToken } from "../api.js";
+import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
+import { DEV_MODE } from "../config.js";
+import { getVkUserInfo } from "../vk.js";
+import { animateCounter } from "../fx.js";
+import { renderInventoryScreen } from "./inventory.js";
+import { renderDutyScreen } from "./duty.js";
+import { renderDuelsScreen } from "./duels.js";
+import { renderCosmeticsScreen } from "./cosmetics.js";
+import { PROFESSION_INFO } from "../professionInfo.js";
+
+const COSMETIC_NAMES = {
+    golden_name: "Золотое имя", gradient_name: "Градиентное имя", vip_badge: "Значок VIP",
+    profile_frame_neon: "Неоновая рамка", profile_frame_gold: "Золотая рамка", profile_frame_ice: "Ледяная рамка",
+    crown_badge: "Корона", mansion: "Особняк",
 };
+
+const STAGE_NAMES = {
+    school: "🏫 Школьник (экзамен)",
+    choosing: "🤔 Выбор профессии",
+    choosing_free: "🤔 Свободный выбор профессии",
+    criminal_offer: "🎲 Развилка после экзамена",
+    pdd_test: "🚗 Сдаёт ПДД",
+    student: "🎒 Студент",
+    worker: "💼 Работник",
+    criminal: "🕶 Преступник",
+    prison: "⛓ В тюрьме",
+};
+
+export async function renderProfileScreen(root) {
+    root.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
+
+    let user;
+    try {
+        user = await apiFetch("/api/profile");
+    } catch (e) {
+        root.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    // Если персонажа сбросили (например, приговор "Казнить" в суде над
+    // президентом) прямо во время сессии — сервер уже перевёл stage в
+    // 'school', но приложение это узнаёт только при полном перезапуске
+    // (app.js проверяет stage лишь один раз при входе). Перезагружаем
+    // страницу — она сама корректно откроет школьный экзамен заново.
+    const RESTART_REQUIRED_STAGES = ["school", "pdd_test", "choosing", "choosing_free", "criminal_offer"];
+    if (RESTART_REQUIRED_STAGES.includes(user.stage)) {
+        window.location.reload();
+        return;
+    }
+
+    const mainLines = [];
+    const cosmetics = user.cosmetics || [];
+    const isPresident = !!user.is_president;
+
+    if (isPresident) {
+        mainLines.push(`<div class="president-top-banner">🎖 ПРЕЗИДЕНТ СТРАНЫ${user.impeachment_pending ? " ⚠️ (идёт голосование за импичмент)" : ""}</div>`);
+    }
+    if (user.awaiting_trial) {
+        mainLines.push(`<div class="president-top-banner" style="background:linear-gradient(90deg,#4a1a1a,#2a1010);color:#ff9eb5">⚖️ БЫВШИЙ ПРЕЗИДЕНТ — ЖДЁТ СУДА</div>`);
+    }
+    if (user.times_president > 1) {
+        mainLines.push(`<div class="profile-row profile-dim">${"⭐".repeat(user.times_president)} Был(а) президентом ${user.times_president} раз(а)</div>`);
+    }
+
+    const nameClass = isPresident
+        ? "president-name-fire"
+        : user.active_name_style === "gradient_name" ? "cosmetic-gradient-name"
+        : user.active_name_style === "golden_name" ? "cosmetic-golden-name" : "";
+    const nameBadges = [
+        cosmetics.includes("crown_badge") ? "👑" : "",
+        cosmetics.includes("vip_badge") ? "💎 VIP" : "",
+    ].filter(Boolean).join(" ");
+    const displayName = user.username ? "@" + escapeHtml(user.username) : "ID " + user.tg_id;
+    mainLines.push(`<div class="profile-row"><span class="${nameClass}">${displayName}</span>${nameBadges ? " " + nameBadges : ""}</div>`);
+    mainLines.push(`<div class="profile-row profile-dim" id="vk-fullname-slot"></div>`);
+    mainLines.push(`<div class="profile-row profile-dim">${user.has_incognito ? "🕵️ Инкогнито активно — никто не перейдёт в твой настоящий ВК." : "👁 Сейчас любой может перейти в твой настоящий профиль ВКонтакте. Не хочешь этого — купи «Инкогнито» в Магазине."}</div>`);
+    mainLines.push(`<div class="subtitle">${STAGE_NAMES[user.stage] || user.stage}</div>`);
+
+    if (user.profession_name) {
+        mainLines.push(`<div class="profile-row">💼 ${isPresident ? "Ранее работал(а): " : ""}${escapeHtml(user.profession_name)}${user.profession && !isPresident ? ` <span class="profession-info-btn" id="profession-info-btn">❗</span>` : ""}</div>`);
+    }
+    if (user.forced_from_profession_name) {
+        mainLines.push(`<div class="profile-row profile-dim">⚠️ Президент принудительно сменил профессию — раньше был(а): ${escapeHtml(user.forced_from_profession_name)}</div>`);
+    }
+
+    mainLines.push(`<div class="profile-row profile-balance" id="balance-value">💰 0.00 ₭</div>`);
+
+    if (user.net_rate_per_hour > 0) {
+        mainLines.push(`<div class="profile-row">📈 Сейчас зарабатываешь: ${user.net_rate_per_hour.toFixed(2)} ₭/час</div>`);
+    } else if (user.zero_rate_reason) {
+        const isCommuteReason = user.zero_rate_reason.includes("не был(а) на работе/учёбе");
+        let reasonText = user.zero_rate_reason;
+        if (isCommuteReason) {
+            reasonText = user.stage === "student"
+                ? "ты не учишься, стипендия не начисляется — перейди во вкладку Учёба"
+                : "ты не работаешь, доход не идёт — перейди во вкладку Работа";
+        }
+        mainLines.push(`<div class="profile-row profile-dim">📉 Доход сейчас: 0 ₭/час (${escapeHtml(reasonText)})</div>`);
+    }
+
+    if (user.progress && user.progress.kind === "graduation") {
+        const p = user.progress;
+        mainLines.push(`
+            <div class="profile-row">🎓 До выпуска: осталось ~${p.hours_left} ч.</div>
+            <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (p.hours_done / p.hours_total) * 100)}%"></div></div>
+        `);
+    }
+
+    if (user.stage === "worker" && !isPresident) {
+        const authorityLevel = Math.min(Math.floor(Number(user.authority)), 10);
+        const authorityBonus = Math.max(0, authorityLevel - 1);
+        mainLines.push(`<div class="profile-row">🥋 Ранг: ${authorityLevel}/10${authorityBonus > 0 ? ` (+${authorityBonus}% к шансу успеха на заявках)` : ""}</div>`);
+        const RANK_CONFIRMABLE = ["police", "medicine", "mchs", "construction", "education"];
+        if (authorityLevel < 10) {
+        const done = user.duty_successes_current_profession || 0;
+        const total = user.authority_threshold || 4;
+        const barFull = done >= total;
+        if (barFull && RANK_CONFIRMABLE.includes(user.profession)) {
+            mainLines.push(`
+                <div class="profile-row profile-dim">Шкала Ранга заполнена — коллега должен подтвердить рост</div>
+                <div class="progress-bar"><div class="progress-bar-fill" style="width:100%"></div></div>
+                <button class="btn" id="rank-confirm-btn" style="margin-top:6px">🎖 Повысить ранг</button>
+            `);
+        } else {
+            mainLines.push(`
+                <div class="profile-row profile-dim">До след. уровня Ранга: ${done}/${total} успешных заявок</div>
+                <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (done / total) * 100)}%"></div></div>
+            `);
+        }
+        }
+    }
+    if (user.stage === "criminal") {
+        mainLines.push(`<div class="profile-row">🔫 Авторитет: ${Number(user.authority).toFixed(2)}/100</div>`);
+        mainLines.push(`<div class="profile-dim" style="margin-bottom:4px">При 100 можно баллотироваться в Боссы Мафии и в депутаты (президенты).</div>`);
+    } else {
+        mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
+    }
+    mainLines.push(`<div class="profile-row">⚔️ Дуэли: ${user.duel_wins || 0} побед / ${user.duel_losses || 0} поражений</div>`);
+    mainLines.push(`<div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${user.government_rating_level || 0}</div>`);
+    mainLines.push(`<div class="profile-row">🏛 Налог в стране: ${(user.tax_rate * 100).toFixed(1)}%</div>`);
+
+    const badges = [];
+    if (user.is_president) badges.push(`🎖 Президент`);
+    if (user.is_peoples_rep) badges.push(`📜 Представитель народа`);
+    if (user.founder_number) badges.push(`🏆 Основатель города №${user.founder_number}`);
+    if (user.is_deputy && !isPresident) badges.push(`🏛 Депутат`);
+    if (user.is_minister) badges.push(`🎩 ${user.minister_post_name}`);
+    if (user.is_vor) badges.push(`👑 Босс Мафии`);
+    if (badges.length) {
+        mainLines.push(`<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>`);
+    }
+
+    if (!isPresident) {
+        const reserveEligible = Number(user.rating) >= 10 && user.has_veto;
+        mainLines.push(`<div class="profile-row profile-dim">🗳 Голос по Золотовалютному резерву: ${reserveEligible ? "✅ доступен" : `❌ нужны Рейтинг 10+ и «Вето» (сейчас: рейтинг ${Number(user.rating).toFixed(0)}, «Вето» ${user.has_veto ? "есть" : "нет"})`}</div>`);
+    }
+
+    mainLines.push(`<div class="profile-row profile-dim">🎒 Предметов в инвентаре: ${user.inventory_count}</div>`);
+    mainLines.push(`<div class="profile-row profile-dim">👥 Друзей приглашено: ${user.friend_count}</div>`);
+    if (user.invited_by) {
+        const inviterName = user.invited_by.username ? "@" + escapeHtml(user.invited_by.username) : "ID " + user.invited_by.vk_id;
+        mainLines.push(`<div class="profile-row profile-dim">🔗 Тебя пригласил(а): ${inviterName}</div>`);
+    }
+
+    const FRAME_CLASSES = { profile_frame_neon: " profile-avatar-neon", profile_frame_gold: " profile-avatar-gold", profile_frame_ice: " profile-avatar-ice" };
+    const avatarFrameClass = isPresident ? " profile-avatar-president" : FRAME_CLASSES[user.active_frame] || "";
+
+    const buffIcons = (user.buffs || []).map((b, i) =>
+        `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}"><img src="assets/icons/${b.code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${b.icon}</span></button>`
+    ).join("");
+
+    root.innerHTML = `
+        <div class="card${isPresident ? " profile-card-president" : ""}">
+            <div class="title">🎮 Твой профиль</div>
+            <div class="profile-layout-v2">
+                <div class="profile-left-col">
+                    <div class="profile-avatar-col" id="profile-avatar-col"><div class="profile-avatar profile-avatar-placeholder${avatarFrameClass}">👤</div></div>
+                    <div class="profile-assets-row">
+                        <button class="profile-asset-btn" id="profile-house-btn" title="Твой дом">${user.house_skin ? `<img src="assets/houses/${user.house_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.house_skin ? "display:none" : ""}">${user.has_house ? "🏠" : "🏗"}</span></button>
+                        <button class="profile-asset-btn" id="profile-car-btn" title="Твоя машина">${user.car_skin ? `<img src="assets/cars/${user.car_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.car_skin ? "display:none" : ""}">${user.has_car ? "🚗" : "🚫"}</span></button>
+                        <button class="profile-asset-btn" id="profile-cosmetics-btn" title="Косметика">${user.active_frame ? `<div class="profile-avatar-placeholder ${FRAME_CLASSES[user.active_frame] ? FRAME_CLASSES[user.active_frame].trim() : ""}" style="width:100%;height:100%;font-size:16px">✨</div>` : "✨"}</button>
+                    </div>
+                    <div class="profile-main-col">${mainLines.join("")}</div>
+                </div>
+                <div class="profile-right-col" id="profile-right-col"></div>
+            </div>
+            <div class="profile-buff-row">
+                <div class="profile-dim" style="margin-bottom:4px">🧪 Активные баффы/дебаффы${buffIcons ? "" : ": сейчас ничего не действует"}</div>
+                <div class="profile-buff-icons">${buffIcons}</div>
+            </div>
+        </div>
+    `;
+
+    (user.buffs || []).forEach((b, i) => {
+        const btn = root.querySelector(`#buff-icon-${i}`);
+        btn.onclick = () => showBuffPopup(b);
+    });
+
+    const balanceEl = root.querySelector("#balance-value");
+    if (balanceEl) {
+        animateCounter(balanceEl, 0, Number(user.balance), 700, (v) => `💰 ${v.toFixed(2)} ₭`);
+    }
+
+    // Фото из VK подгружаем отдельно, не блокируя показ самого профиля —
+    root.querySelector("#profile-house-btn").onclick = () => showAssetPopup("🏠 Твой дом", user.has_house, user.house_skin, "houses", "Дом ещё не приобретён — купи «Квартиру» в Магазине.");
+    root.querySelector("#profile-car-btn").onclick = () => showAssetPopup("🚗 Твоя машина", user.has_car, user.car_skin, "cars", "Машина ещё не приобретена — купи её в Магазине.");
+    root.querySelector("#profile-cosmetics-btn").onclick = () => showCosmeticsPreviewPopup(root, user);
+    const rankConfirmBtn = root.querySelector("#rank-confirm-btn");
+    if (rankConfirmBtn) {
+        rankConfirmBtn.onclick = () => requestRankConfirm(root, rankConfirmBtn);
+    }
+    const professionInfoBtn = root.querySelector("#profession-info-btn");
+    if (professionInfoBtn) {
+        professionInfoBtn.onclick = () => showProfessionInfoDetails(user.profession, user.profession_name);
+    }
+    await checkRecruitmentOffer(root);
+
+    // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
+    // Bridge зависал (случается вне настоящего приложения VK), весь экран
+    // виснул на "Загружаем...". Теперь профиль показывается сразу с заглушкой,
+    // а фото просто подставляется следом, если и когда придёт.
+    getVkUserInfo().then((info) => {
+        if (!info) return;
+        if (info.photoUrl) {
+            const col = root.querySelector("#profile-avatar-col");
+            if (col) col.innerHTML = `<img src="${info.photoUrl}" class="profile-avatar${avatarFrameClass}" alt="Фото профиля">`;
+        }
+        if (info.fullName) {
+            const slot = root.querySelector("#vk-fullname-slot");
+            if (slot) slot.textContent = `👤 ${info.fullName}`;
+        }
+        // Запоминаем на backend — это единственный способ потом показать твоё
+        // настоящее имя/фото ДРУГИМ игрокам (сервисного ключа ВК на чужие
+        // профили у нас нет, а вот через самого себя — можно).
+        const firstNameOnly = info.fullName ? info.fullName.split(" ")[0] : null;
+        apiFetch("/api/profile/cache_vk_info", { method: "POST", body: { photo_url: info.photoUrl, first_name: firstNameOnly } }).catch(() => {});
+    });
+
+    const navCard = root.querySelector("#profile-right-col");
+
+    addProfileNavBtn(navCard, "nav-inventory.png", "🎒", "Инвентарь", () => showOverlayScreen(renderInventoryScreen));
+    addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
+    addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen), user.pending_duels_count || 0);
+    addProfileNavBtn(navCard, "nav-cosmetics.png", "✨", "Косметика", () => showOverlayScreen(renderCosmeticsScreen));
+    addProfileNavBtn(navCard, "nav-visitors.png", "👀", "Посетители", () => showOverlayScreen((el) => renderVisitorsOverlay(el)), user.new_visitors_count || 0);
+    addProfileNavBtn(navCard, "nav-invite.png", "🔗", "Пригласить друга", () => showInviteLink(null, user.tg_id));
+    addProfileNavBtn(navCard, "nav-friends.png", "👥", `Друзья (${user.friend_count})`, () => showOverlayScreen((el) => renderFriendsOverlay(el)));
+
+    let chestStatus;
+    try {
+        chestStatus = await apiFetch("/api/chest/status");
+    } catch (e) {
+        chestStatus = { available: false };
+    }
+    if (chestStatus.available) {
+        const chestBtn = addProfileNavBtn(navCard, "nav-chest.png", "🎁", "Сундук", () => openChestFromNav(chestBtn));
+    }
+    if (user.has_oko) {
+        addProfileNavBtn(navCard, "nav-oko.png", "👁", "ОКО: статистика", () => showOkoPopup(), user.new_vk_clicks_count || 0);
+    }
+    if (user.has_accounting_book) {
+        addProfileNavBtn(navCard, "nav-accounting.png", "📒", "Финансовые операции", () => showAccountingPopup());
+    }
+
+    if (DEV_MODE) {
+        const testCard = document.createElement("div");
+        testCard.className = "card";
+        testCard.innerHTML = `<div class="profile-dim" style="margin-bottom:10px">🧪 Кнопки для теста — уберите DEV_MODE перед тем, как показывать игру кому-то ещё.</div>`;
+        const switchBtn = document.createElement("button");
+        switchBtn.className = "btn btn-secondary";
+        switchBtn.textContent = "🔄 Сменить аккаунт (выйти)";
+        switchBtn.onclick = () => {
+            clearToken();
+            window.location.reload();
+        };
+        testCard.appendChild(switchBtn);
+        const eventBtn = document.createElement("button");
+        eventBtn.className = "btn btn-secondary";
+        eventBtn.textContent = "🔥 Запустить событие (пожар)";
+        eventBtn.onclick = async () => {
+            eventBtn.disabled = true;
+            try {
+                await apiFetch("/api/national_event/dev/trigger", { method: "POST" });
+                showGameStylePopup("🔥 Запущено!", "Событие «Лесные пожары» началось — загляни во вкладку «Событие», она уже должна была появиться.");
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+            eventBtn.disabled = false;
+        };
+        testCard.appendChild(eventBtn);
+        const forceFinishBtn = document.createElement("button");
+        forceFinishBtn.className = "btn btn-secondary";
+        forceFinishBtn.textContent = "🛑 Сбросить событие (тест)";
+        forceFinishBtn.onclick = async () => {
+            forceFinishBtn.disabled = true;
+            try {
+                await apiFetch("/api/national_event/dev/force_finish", { method: "POST" });
+                showGameStylePopup("🛑 Сброшено!", "Текущее событие принудительно убрано — теперь можно запустить новое, оно подхватит актуальную цель/параметры.");
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+            forceFinishBtn.disabled = false;
+        };
+        testCard.appendChild(forceFinishBtn);
+        const fixPresidentBtn = document.createElement("button");
+        fixPresidentBtn.className = "btn btn-secondary";
+        fixPresidentBtn.textContent = "🔧 Починить застрявшее президентство";
+        fixPresidentBtn.onclick = async () => {
+            fixPresidentBtn.disabled = true;
+            try {
+                const r = await apiFetch("/api/dev/fix_stale_president", { method: "POST" });
+                showGameStylePopup(r.status === "fixed" ? "🔧 Починено!" : "ℹ️ Не требуется", r.message);
+                if (r.status === "fixed") await renderProfileScreen(root);
+            } catch (e) {
+                showGameStylePopup("❌ Не получилось", e.message);
+            }
+            fixPresidentBtn.disabled = false;
+        };
+        testCard.appendChild(fixPresidentBtn);
+        const moneyBtn = document.createElement("button");
+        moneyBtn.className = "btn";
+        moneyBtn.textContent = "🎁 +1000₭ (тест)";
+        moneyBtn.onclick = () => giveTestMoney(root, moneyBtn);
+        testCard.appendChild(moneyBtn);
+        const ratingBtn = document.createElement("button");
+        ratingBtn.className = "btn";
+        ratingBtn.textContent = "⭐ +100 к рейтингу (тест)";
+        ratingBtn.onclick = () => giveTestRating(root, ratingBtn);
+        testCard.appendChild(ratingBtn);
+        const electionsBtn = document.createElement("button");
+        electionsBtn.className = "btn";
+        electionsBtn.textContent = "🗳 Завершить все голосования сейчас (тест)";
+        electionsBtn.onclick = () => resolveAllElectionsNow(root, electionsBtn);
+        testCard.appendChild(electionsBtn);
+
+        const switchProfBtn = document.createElement("button");
+        switchProfBtn.className = "btn";
+        switchProfBtn.textContent = "🧑‍💼 Переключить профессию (тест)";
+        const profPickerArea = document.createElement("div");
+        switchProfBtn.onclick = () => showProfessionPicker(root, profPickerArea);
+        testCard.appendChild(switchProfBtn);
+        testCard.appendChild(profPickerArea);
+
+        const timersBtn = document.createElement("button");
+        timersBtn.className = "btn";
+        timersBtn.textContent = "⏩ Завершить все таймеры сейчас (тест)";
+        const timersResult = document.createElement("div");
+        timersBtn.onclick = () => completeAllTimers(timersBtn, timersResult);
+        testCard.appendChild(timersBtn);
+        testCard.appendChild(timersResult);
+
+        root.appendChild(testCard);
+    }
+
+    if (user.expired_buffs && user.expired_buffs.length) {
+        showExpiredBuffsPopupQueue(user.expired_buffs);
+    }
+    if (user.new_buffs && user.new_buffs.length) {
+        showNewBuffsPopupQueue(user.new_buffs);
+    }
+}
+
+async function openChestFromNav(btn) {
+    btn.disabled = true;
+    try {
+        const result = await apiFetch("/api/chest/open", { method: "POST" });
+        showChestOverlay(result.amount, btn);
+    } catch (e) {
+        alert(e.message);
+        btn.disabled = false;
+    }
+}
+
+async function renderVisitorsOverlay(root) {
+    let data;
+    try {
+        data = await apiFetch("/api/profile/visitors");
+    } catch (e) {
+        root.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    root.innerHTML = `<div class="subtitle">👀 Последние посетители профиля</div>`;
+    if (!data.visitors.length) {
+        root.innerHTML += `<div class="profile-dim">Пока никто не заходил — как только кто-то посетит твой профиль, он появится здесь.</div>`;
+        return;
+    }
+    data.visitors.forEach((v) => {
+        const row = document.createElement("div");
+        row.className = "shop-item";
+        const name = v.username ? "@" + escapeHtml(v.username) : "ID " + v.vk_id;
+        const time = new Date(v.visited_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+        row.innerHTML = `<div class="shop-item-name">${name}</div><div class="profile-dim">${time}</div>`;
+        row.onclick = () => showStackedProfileOverlay(v.vk_id);
+        root.appendChild(row);
+    });
+}
+
+async function renderFriendsOverlay(root) {
+    let friends;
+    try {
+        friends = await apiFetch("/api/profile/friends");
+    } catch (e) {
+        root.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+    root.innerHTML = `<div class="subtitle">👥 Друзья</div>`;
+    if (!friends.length) {
+        root.innerHTML += `<div class="profile-dim">Пока никого не пригласил(а).</div>`;
+        return;
+    }
+    friends.forEach((f) => {
+        const card = document.createElement("div");
+        card.className = "shop-item";
+        card.innerHTML = `<div class="shop-item-name">${f.username ? "@" + escapeHtml(f.username) : "ID " + f.vk_id}</div>`;
+        card.onclick = () => window.open(f.vk_profile_url, "_blank");
+        root.appendChild(card);
+    });
+}
+
+function showExpiredBuffsPopupQueue(buffs) {
+    const [first, ...rest] = buffs;
+    const overlay = document.createElement("div");
+    overlay.className = "chest-overlay";
+    overlay.innerHTML = `
+        <div class="chest-overlay-box">
+            <div class="chest-overlay-icon">⌛</div>
+            <div class="profile-dim" style="margin-bottom:4px">Действие закончилось</div>
+            <div class="chest-overlay-title" style="color:#a8adb8;font-size:16px;font-weight:700">${escapeHtml(first.title)}</div>
+            <div class="profile-dim" style="margin:8px 0 16px">Эффект больше не действует (либо предмет закончился).</div>
+            <button class="btn" id="expired-buff-close-btn">Понятно</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#expired-buff-close-btn").onclick = () => {
+        overlay.remove();
+        if (rest.length) showExpiredBuffsPopupQueue(rest);
+    };
+}
+
+function showNewBuffsPopupQueue(buffs) {
+    const [first, ...rest] = buffs;
+    const overlay = document.createElement("div");
+    overlay.className = "chest-overlay";
+    overlay.innerHTML = `
+        <div class="chest-overlay-box">
+            <div class="chest-overlay-icon"><img src="assets/icons/${first.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+            <span style="display:none">${first.icon}</span></div>
+            <div class="profile-dim" style="margin-bottom:4px">${first.positive ? "✨ Новый баф!" : "⚠️ Новый дебаф!"}</div>
+            <div class="chest-overlay-title" style="color:${first.positive ? "#7ee787" : "#ff9eb5"};font-size:16px;font-weight:700">${escapeHtml(first.title)}</div>
+            <div class="profile-dim" style="margin:8px 0 16px">${escapeHtml(first.description)}</div>
+            <button class="btn" id="new-buff-close-btn">Понятно</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#new-buff-close-btn").onclick = () => {
+        overlay.remove();
+        if (rest.length) showNewBuffsPopupQueue(rest);
+    };
+}
+
+
+async function showOkoPopup() {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    content.innerHTML = `<div class="loading">Загружаем…</div>`;
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    try {
+        const data = await apiFetch("/api/profile/vk_visitors");
+        content.innerHTML = `<div class="subtitle">👁 Всего переходов в твой ВК: ${data.total_clicks}</div>`;
+        if (!data.clickers.length) {
+            content.innerHTML += `<div class="profile-dim">Пока никто не переходил.</div>`;
+            return;
+        }
+        content.innerHTML += `<div class="profile-dim" style="margin-bottom:8px">Последние 5:</div>`;
+        data.clickers.forEach((c) => {
+            const row = document.createElement("div");
+            row.className = "shop-item";
+            const name = c.vk_first_name || (c.username ? "@" + escapeHtml(c.username) : "ID " + c.vk_id);
+            const time = new Date(c.clicked_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+            row.innerHTML = `<div class="shop-item-name">${c.vk_photo_url ? `<img src="${c.vk_photo_url}" class="oko-clicker-photo" alt="">` : ""}${escapeHtml(name)}</div><div class="profile-dim">${time}</div>`;
+            row.onclick = () => showStackedProfileOverlay(c.vk_id);
+            content.appendChild(row);
+        });
+    } catch (e) {
+        content.innerHTML = `<div class="error">${e.message}</div>`;
+    }
+}
+
+const ASSET_SKIN_TITLES = {
+    "house-mansion": "Особняк", "house-modern": "Современный дом", "house-castle": "Замок",
+    "car-sport": "Спорткар", "car-lux": "Лимузин",
+};
+
+async function requestRankConfirm(root, btn) {
+    btn.disabled = true;
+    try {
+        await apiFetch("/api/duty/request_rank_confirm", { method: "POST" });
+        showGameStylePopup("🎖 Заявка отправлена!", "Запрос на подтверждение роста ранга ушёл случайному коллеге по твоей профессии — жди уведомления об ответе.");
+        await renderProfileScreen(root);
+    } catch (e) {
+        btn.disabled = false;
+        showGameStylePopup("❌ Не получилось", e.message);
+    }
+}
+
+async function checkRecruitmentOffer(root) {
+    let data;
+    try {
+        data = await apiFetch("/api/recruitment/my_offer");
+    } catch (e) {
+        return;
+    }
+    if (!data.has_offer) return;
+
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.style.marginTop = "6px";
+    btn.textContent = "✉️ ВАМ ЗАПИСКА ОТ ВОРА";
+    btn.onclick = () => showRecruitmentOfferPopup(root, data.offer_id);
+    const mainCard = root.querySelector(".card");
+    if (mainCard) mainCard.appendChild(btn);
+}
+
+function showRecruitmentOfferPopup(root, offerId) {
+    showGamePopupWithContent("✉️ Записка от вора", (content) => {
+        content.innerHTML = `
+            <div class="profile-dim" style="margin-bottom:8px">Один из воров хотел бы предложить вам присоединиться к ним.</div>
+            <div class="profile-dim" style="font-size:13px;margin-bottom:4px">• Заработок — карманные кражи и ограбления вместо обычной почасовой работы, без стабильного дохода.</div>
+            <div class="profile-dim" style="font-size:13px;margin-bottom:4px">• Риск — можно попасть в тюрьму, если жертва узнает тебя и полиция поймает.</div>
+            <div class="profile-dim" style="font-size:13px;margin-bottom:8px">• Свой путь роста — Авторитет вместо Рейтинга, можно стать Боссом Мафии.</div>
+            <button class="btn" id="offer-accept-btn">Принять</button>
+            <button class="btn btn-secondary" id="offer-decline-btn">Отказаться</button>
+            <div id="offer-result"></div>
+        `;
+        const respond = async (accept) => {
+            const resultEl = content.querySelector("#offer-result");
+            resultEl.innerHTML = `<div class="loading">…</div>`;
+            try {
+                await apiFetch("/api/recruitment/respond_offer", { method: "POST", body: { offer_id: offerId, accept } });
+                resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Готово!${accept ? " Обновите страницу, чтобы увидеть новую роль." : ""}</div>`;
+            } catch (e) {
+                resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+            }
+        };
+        content.querySelector("#offer-accept-btn").onclick = () => respond(true);
+        content.querySelector("#offer-decline-btn").onclick = () => respond(false);
+    });
+}
+
+function showProfessionInfoDetails(code, name) {
+    const info = PROFESSION_INFO[code];
+    showGamePopupWithContent(name, (content) => {
+        content.innerHTML = info
+            ? `<div class="profile-dim" style="margin-bottom:8px">${escapeHtml(info.summary)}</div>${info.details.map((d) => `<div class="profile-dim" style="font-size:13px;margin-bottom:4px">• ${escapeHtml(d)}</div>`).join("")}`
+            : `<div class="profile-dim">Описание пока не добавлено.</div>`;
+    });
+}
+
+function showCosmeticsPreviewPopup(root, user) {
+    const frameText = user.active_frame ? (COSMETIC_NAMES[user.active_frame] || user.active_frame) : "не выбрана";
+    const nameStyleText = user.active_name_style ? (COSMETIC_NAMES[user.active_name_style] || user.active_name_style) : "не выбран";
+    showGamePopupWithContent("✨ Твоя косметика", (content) => {
+        content.innerHTML = `
+            <div class="profile-row">🖼 Рамка профиля: <b>${escapeHtml(frameText)}</b></div>
+            <div class="profile-row">🔤 Стиль имени: <b>${escapeHtml(nameStyleText)}</b></div>
+            <div class="profile-dim" style="margin:8px 0">Все купленные варианты (рамки, цвет имени и т.д.) хранятся тут — заходи в Косметику, чтобы посмотреть, что куплено, и переключиться на другой вариант.</div>
+            <button class="btn" id="cosmetics-go-btn">✨ Открыть Косметику</button>
+        `;
+        content.querySelector("#cosmetics-go-btn").onclick = () => showOverlayScreen(renderCosmeticsScreen);
+    });
+}
+
+function showAssetPopup(title, owned, skin, folder, emptyText) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    if (!owned) {
+        content.innerHTML = `<div class="subtitle">${title}</div><div class="profile-dim">${emptyText}</div>`;
+    } else {
+        const skinTitle = skin ? ASSET_SKIN_TITLES[skin] || skin : "Обычный вид (внешний вид не куплен)";
+        content.innerHTML = `
+            <div class="subtitle">${title}</div>
+            ${skin ? `<img src="assets/${folder}/${skin}.png" class="profile-asset-preview" alt="" onerror="this.style.display='none'">` : ""}
+            <div class="profile-row">Текущий внешний вид: <b>${skinTitle}</b></div>
+            ${!skin ? `<div class="profile-dim">Хочешь выделиться? Купи внешний вид в Косметике (Магазин).</div>` : ""}
+        `;
+    }
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+}
+
+async function showAccountingPopup() {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    content.innerHTML = `<div class="loading">Загружаем…</div>`;
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    try {
+        const data = await apiFetch("/api/profile/transactions");
+        content.innerHTML = `<div class="subtitle">📒 Последние операции</div>`;
+        if (!data.transactions.length) {
+            content.innerHTML += `<div class="profile-dim">Пока ничего не происходило с балансом.</div>`;
+            return;
+        }
+        data.transactions.forEach((t) => {
+            const row = document.createElement("div");
+            row.className = "shop-item";
+            const sign = t.amount >= 0 ? "+" : "";
+            const color = t.amount >= 0 ? "#7ee787" : "#ff6b81";
+            const time = new Date(t.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+            const label = t.item_name ? `${t.label}: ${escapeHtml(t.item_name)}` : t.label;
+            row.innerHTML = `<div class="shop-item-name">${label}</div><div class="profile-dim">${time}</div><div style="color:${color};font-weight:700">${sign}${t.amount.toFixed(2)}₭</div>`;
+            content.appendChild(row);
+        });
+    } catch (e) {
+        content.innerHTML = `<div class="error">${e.message}</div>`;
+    }
+}
+
+export async function renderOtherProfile(root, targetVkId) {
+    root.innerHTML = `<div class="loading">Загружаем профиль…</div>`;
+    let p;
+    try {
+        p = await apiFetch(`/api/profile/${targetVkId}`);
+    } catch (e) {
+        root.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    const badges = [];
+    if (p.is_president) badges.push("🎖 Президент");
+    if (p.is_peoples_rep) badges.push("📜 Представитель народа");
+    if (p.founder_number) badges.push(`🏆 Основатель города №${p.founder_number}`);
+    if (p.is_deputy) badges.push("🏛 Депутат");
+    if (p.is_minister) badges.push(`🎩 ${p.minister_post_name}`);
+    if (p.is_vor) badges.push("👑 Босс Мафии");
+
+    const photoHtml = p.vk_photo_url ? `<img src="${p.vk_photo_url}" class="oko-clicker-photo" style="width:64px;height:64px;margin-bottom:8px" alt="">` : "";
+    const displayName = p.vk_first_name || (p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id);
+
+    root.innerHTML = `
+        <div class="card${p.is_president ? " profile-card-president" : ""}">
+            ${photoHtml}
+            <div class="title">👤 ${escapeHtml(displayName)}</div>
+            <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
+            ${p.stage === "criminal" ? `<div class="profile-row">🔫 Авторитет: ${p.authority.toFixed(2)}/100</div>` : `<div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>`}
+            <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>
+            <div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${p.government_rating_level || 0}</div>
+            ${badges.length ? `<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>` : ""}
+            <div id="vk-link-slot"></div>
+        </div>
+    `;
+
+    const otherProfessionInfoBtn = root.querySelector("#other-profession-info-btn");
+    if (otherProfessionInfoBtn) {
+        otherProfessionInfoBtn.onclick = () => showProfessionInfoDetails(p.profession, p.profession_name);
+    }
+
+    const vkSlot = root.querySelector("#vk-link-slot");
+    if (p.has_incognito) {
+        vkSlot.innerHTML = `<div class="profile-dim" style="margin-top:10px">🕵️ Этот игрок скрыл переход в свой настоящий ВК (Инкогнито).</div>`;
+    } else {
+        const vkBtn = document.createElement("button");
+        vkBtn.className = "btn btn-secondary";
+        vkBtn.style.cssText = "display:block;width:100%;margin-top:10px";
+        vkBtn.textContent = "Открыть страницу ВКонтакте";
+        vkBtn.onclick = () => {
+            apiFetch(`/api/profile/${targetVkId}/track_vk_click`, { method: "POST" }).catch(() => {});
+            window.open(p.vk_profile_url, "_blank");
+        };
+        vkSlot.appendChild(vkBtn);
+    }
+}
+
+
+function showChestOverlay(amount, chestBtn) {
+    const overlay = document.createElement("div");
+    overlay.className = "chest-overlay";
+    overlay.innerHTML = `
+        <div class="chest-overlay-box">
+            <div class="chest-overlay-icon">🎁</div>
+            <div class="chest-overlay-title">В сундуке было:</div>
+            <div class="chest-overlay-amount">+${amount.toFixed(2)}₭</div>
+            <button class="btn" id="chest-claim-btn">Забрать</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#chest-claim-btn").onclick = () => {
+        overlay.remove();
+        if (chestBtn) chestBtn.remove();
+    };
+}
+
+async function completeAllTimers(btn, resultEl) {
+    btn.disabled = true;
+    resultEl.innerHTML = `<div class="loading">Форсируем все таймеры…</div>`;
+    try {
+        const r = await apiFetch("/api/dev/complete_all_timers", { method: "POST" });
+        resultEl.innerHTML = `
+            <div class="profile-row" style="color:#7ee787">✅ Готово!</div>
+            <div class="profile-dim">Голосований разрешено: ${r.elections_resolved} · Доставок курьером: ${r.couriers_delivered} · Освобождено из тюрьмы: ${r.prisoners_released} · Вылечено: ${r.sickness_cured}</div>
+            <div class="profile-dim">Плюс: дуэли, активная Модернизация, активный Бунт, сегодняшнее голосование за Представителя народа — если были.</div>
+        `;
+    } catch (e) {
+        resultEl.innerHTML = `<div class="error">${e.message}</div>`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function showProfessionPicker(root, container) {
+    container.innerHTML = `<div class="loading">Загружаем список…</div>`;
+    let data;
+    try {
+        data = await apiFetch("/api/dev/professions");
+    } catch (e) {
+        container.innerHTML = `<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    container.innerHTML = `<div class="subtitle" style="margin-top:8px">Выбери профессию — станешь ей полноценно (нужные предметы выдадутся сразу):</div>`;
+    data.professions.forEach((p) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = p.name;
+        btn.onclick = () => switchProfession(root, p.code);
+        container.appendChild(btn);
+    });
+}
+
+async function switchProfession(root, code) {
+    try {
+        const result = await apiFetch("/api/dev/switch_profession", { method: "POST", body: { profession: code } });
+        const grantedText = result.granted_items.length ? ` Выдано: ${result.granted_items.join(", ")}.` : "";
+        alert(`Готово! Теперь ты: ${result.profession_name}.${grantedText}`);
+        await renderProfileScreen(root);
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+function showInviteLink(container, myVkId) {
+    const link = `${window.location.origin}${window.location.pathname}?ref=${myVkId}`;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(link).catch(() => {});
+    }
+
+    const overlay = document.createElement("div");
+    overlay.className = "chest-overlay";
+    overlay.innerHTML = `
+        <div class="chest-overlay-box">
+            <div class="chest-overlay-icon">🔗</div>
+            <div class="chest-overlay-title">Пригласить друга</div>
+            <div class="profile-dim" style="margin:8px 0">За приглашение: +100₭ и +1 к рейтингу. Работает только один раз на аккаунт — за второго приглашённого начисление не зачтётся. Ссылка уже скопирована в буфер обмена:</div>
+            <div class="profile-row" style="word-break:break-all;font-size:13px;margin-bottom:16px">${escapeHtml(link)}</div>
+            <button class="btn" id="invite-close-btn">Закрыть</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#invite-close-btn").onclick = () => overlay.remove();
+}
+
+function showBuffPopup(buff) {
+    const overlay = document.createElement("div");
+    overlay.className = "chest-overlay";
+    overlay.innerHTML = `
+        <div class="chest-overlay-box">
+            <div class="chest-overlay-icon"><img src="assets/icons/${buff.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+            <span style="display:none">${buff.icon}</span></div>
+            <div class="chest-overlay-title" style="color:${buff.positive ? "#7ee787" : "#ff9eb5"};font-size:16px;font-weight:700">${escapeHtml(buff.title)}</div>
+            <div class="profile-dim" style="margin:8px 0 16px">${escapeHtml(buff.description)}</div>
+            <button class="btn" id="buff-close-btn">Закрыть</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#buff-close-btn").onclick = () => overlay.remove();
+}
+
+function addProfileNavBtn(container, iconFile, emoji, label, onClick, badgeCount = 0) {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-secondary profile-nav-btn";
+    btn.innerHTML = `
+        <img src="assets/ui/${iconFile}" class="profile-nav-icon" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+        <span class="profile-nav-emoji-fallback" style="display:none">${emoji}</span>
+        <span>${escapeHtml(label)}</span>
+        ${badgeCount > 0 ? `<span class="profile-nav-badge">+${badgeCount}</span>` : ""}
+    `;
+    btn.onclick = onClick;
+    container.appendChild(btn);
+    return btn;
+}
+
+function showStackedProfileOverlay(vkId) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    renderOtherProfile(content, vkId);
+}
+
+async function showOverlayScreen(renderFn) {
+    const overlay = document.createElement("div");
+    overlay.className = "profile-overlay";
+    const box = document.createElement("div");
+    box.className = "profile-overlay-box";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-secondary profile-overlay-close";
+    closeBtn.textContent = "✕ Закрыть";
+    closeBtn.onclick = () => overlay.remove();
+    box.appendChild(closeBtn);
+    const content = document.createElement("div");
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    await renderFn(content);
+}
+
+async function showFullScreenFrom(root, renderFn, backToFn) {
+    root.innerHTML = "";
+    const backBtn = document.createElement("button");
+    backBtn.className = "btn btn-secondary";
+    backBtn.textContent = "🔙 Назад в профиль";
+    backBtn.onclick = () => backToFn(root);
+    root.appendChild(backBtn);
+    const content = document.createElement("div");
+    root.appendChild(content);
+    await renderFn(content);
+}
+
+async function giveTestMoney(root, btn) {
+    btn.disabled = true;
+    btn.textContent = "Начисляем…";
+    try {
+        await apiFetch("/api/dev/give_money", { method: "POST" });
+        await renderProfileScreen(root);
+    } catch (e) {
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = "🎁 +1000₭ (тест)";
+    }
+}
+
+async function giveTestRating(root, btn) {
+    btn.disabled = true;
+    btn.textContent = "Начисляем…";
+    try {
+        await apiFetch("/api/dev/give_rating", { method: "POST" });
+        await renderProfileScreen(root);
+    } catch (e) {
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = "⭐ +100 к рейтингу (тест)";
+    }
+}
+
+async function resolveAllElectionsNow(root, btn) {
+    btn.disabled = true;
+    btn.textContent = "Завершаем…";
+    try {
+        const result = await apiFetch("/api/dev/resolve_all_elections", { method: "POST" });
+        alert(`Готово: завершено голосований — ${result.resolved_count}. Результаты применены (загляни в 🔔 Уведомления и 🏛 Государство).`);
+        btn.disabled = false;
+        btn.textContent = "🗳 Завершить все голосования сейчас (тест)";
+    } catch (e) {
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = "🗳 Завершить все голосования сейчас (тест)";
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
