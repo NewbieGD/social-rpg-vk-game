@@ -3,18 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Путь</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Мегаполис: Социальная Война</title>
     <link rel="stylesheet" href="style.css">
-    <!-- VK Bridge — официальный SDK VK для мини-приложений, грузим с CDN, сборка не нужна -->
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
 </head>
 <body>
     <div id="app">
-        <div class="loading">Загрузка…</div>
+        <!-- Шапка гражданина -->
+        <header class="city-header">
+            <div class="user-info">
+                <img id="user-avatar" src="https://vk.com/images/camera_50.png" alt="Аватар">
+                <div>
+                    <div id="user-name">Горожанин</div>
+                    <div id="user-status" class="badge legal">Работяга</div>
+                </div>
+            </div>
+            <div class="resources-panel">
+                <div class="res-item" title="Деньги">💵 <span id="res-money">1500</span></div>
+                <div class="res-item" title="Авторитет">⭐ <span id="res-auth">10</span></div>
+                <div class="res-item" title="Энергия">⚡ <span id="res-energy">100</span></div>
+            </div>
+        </header>
+
+        <!-- Контейнер экранов -->
+        <main id="screen-container">
+            <!-- Динамический контент -->
+        </main>
+
+        <!-- Нижняя навигация -->
+        <nav class="city-nav">
+            <button class="nav-btn active" data-target="map">🗺️ Город</button>
+            <button class="nav-btn" data-target="work">🔨 Работа</button>
+            <button class="nav-btn" data-target="crime">🕶️ Улица</button>
+            <button class="nav-btn" data-target="president">🏛️ Власть</button>
+            <button class="nav-btn" data-target="profile">👤 Профиль</button>
+        </nav>
     </div>
-    <script type="module" src="js/app.js"></script>
+
+    <!-- Общий попап -->
+    <div id="game-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3 id="popup-title">Сообщение</h3>
+            <p id="popup-text">...</p>
+            <button id="popup-close" class="city-btn">Понятно</button>
+        </div>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="js/vk.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/screens/map.js"></script>
+    <script src="js/screens/work.js"></script>
+    <script src="js/screens/crime.js"></script>
+    <script src="js/screens/president.js"></script>
+    <script src="js/screens/profile.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
