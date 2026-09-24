@@ -1,7 +1,7 @@
 import { apiFetch, clearToken } from "../api.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
-import { USE_TOWN_MAP_HOME } from "../mapConfig.js";
+import { USE_TOWN_MAP_HOME } from "../themeConfig.js";
 import { USE_STREET_THEME } from "../themeConfig.js";
 import { getVkUserInfo } from "../vk.js";
 import { animateCounter } from "../fx.js";

@@ -1,0 +1,575 @@
+/* theme-street.css — тема «Вечерняя улица».
+   Действует только при body.theme-street (флаг USE_STREET_THEME в js/themeConfig.js).
+   Часть 1 сгенерирована автоматически из style.css (служебный скрипт, в проект не входит):
+   старая сине-фиолетовая палитра -> ночь, небо и свет фонарей. Часть 2 — ручные правила. */
+
+/* ---------- Часть 1: авто-перекраска всех экранов ---------- */
+
+body.theme-street {
+    background: url("assets/backgrounds/game-bg.jpg"),
+        radial-gradient(circle at 15% 0%, rgba(242, 162, 74, 0.12), transparent 40%),
+        radial-gradient(circle at 85% 100%, rgba(255, 107, 129, 0.08), transparent 40%),
+        linear-gradient(180deg, #16131f 0%, #16131f 100%);
+    background-color: #16131f;
+}
+
+body.theme-street #app {
+    background: rgba(22, 19, 31, 0.55);
+}
+
+body.theme-street .loading::before {
+    border: 3px solid #2b2740;
+    border-top-color: #f2a24a;
+}
+
+body.theme-street .card {
+    background: linear-gradient(160deg, #1d1a2b, #1d1a2b);
+}
+
+body.theme-street .subtitle {
+    color: #b9b3c9;
+}
+
+body.theme-street .progress-bar {
+    background: #2b2740;
+}
+
+body.theme-street .progress-bar-fill {
+    background: linear-gradient(90deg, #f2a24a, #ffc27a);
+}
+
+body.theme-street .option-btn {
+    background: #2b2740;
+    border: 1px solid #3a3550;
+}
+
+body.theme-street .option-btn:hover {
+    border-color: #f2a24a;
+}
+
+body.theme-street .option-btn:active {
+    background: #3a3550;
+}
+
+body.theme-street .btn {
+    background: linear-gradient(135deg, #f2a24a, #ffc27a);
+    box-shadow: 0 4px 14px rgba(242, 162, 74, 0.35);
+}
+
+body.theme-street .btn:active {
+    box-shadow: 0 2px 8px rgba(242, 162, 74, 0.35);
+}
+
+body.theme-street .dev-login input {
+    border: 1px solid #3a3550;
+    background: #16131f;
+}
+
+body.theme-street .result-outcome {
+    color: #ffc27a;
+}
+
+body.theme-street .bottom-nav {
+    border-top: 1px solid #2b2740;
+    background: #16131f;
+}
+
+body.theme-street .nav-btn {
+    color: #9c96ad;
+}
+
+body.theme-street .nav-btn.active {
+    color: #ffc27a;
+    text-shadow: 0 0 10px rgba(255, 194, 122, 0.6);
+}
+
+body.theme-street .profile-dim {
+    color: #9c96ad;
+}
+
+body.theme-street .profile-avatar {
+    border: 2px solid #47465c;
+}
+
+body.theme-street .profile-avatar-placeholder {
+    background: #2b2740;
+}
+
+body.theme-street .profile-buffs-col {
+    border-left: 1px solid #2b2740;
+}
+
+@media (max-width: 480px) {
+    body.theme-street .profile-buffs-col {
+        border-top: 1px solid #2b2740;
+    }
+}
+
+body.theme-street .btn-secondary {
+    background: #2b2740;
+}
+
+body.theme-street .shop-item {
+    background: #1d1a2b;
+    border: 1px solid #2b2740;
+}
+
+body.theme-street .chat-messages {
+    background: linear-gradient(180deg, #1d1a2b, #16131f);
+}
+
+body.theme-street .chat-msg {
+    background: #2b2740;
+}
+
+body.theme-street .chat-msg-own {
+    background: linear-gradient(135deg, #f2a24a, #5849c4);
+}
+
+body.theme-street .chat-msg-sender {
+    color: #ffc27a;
+}
+
+body.theme-street .chat-msg-system {
+    color: #9c96ad;
+}
+
+body.theme-street .chat-input-row input {
+    border: 1px solid #3a3550;
+    background: #16131f;
+}
+
+body.theme-street .tab-btn {
+    background: #1d1a2b;
+    border: 1px solid #2b2740;
+    color: #b9b3c9;
+}
+
+body.theme-street .tab-btn.active {
+    background: #2b2740;
+    border-color: #f2a24a;
+}
+
+body.theme-street .map-zone {
+    fill: rgba(242, 162, 74, 0.06);
+    stroke: rgba(242, 162, 74, 0.3);
+}
+
+body.theme-street .map-marker-bg {
+    fill: #1d1a2b;
+    stroke: #47465c;
+}
+
+body.theme-street .map-marker:hover .map-marker-bg {
+    stroke: #ffc27a;
+    filter: drop-shadow(0 0 6px rgba(255, 194, 122, 0.7));
+}
+
+body.theme-street .map-route-line {
+    stroke: rgba(255, 194, 122, 0.4);
+}
+
+body.theme-street .map-legend {
+    color: #9c96ad;
+}
+
+body.theme-street .inv-slot {
+    background: linear-gradient(160deg, #2b2740, #1d1a2b);
+    border: 1px solid #47465c;
+}
+
+body.theme-street .inv-slot-safe {
+    border-color: #f2a24a;
+    box-shadow: 0 0 8px rgba(242, 162, 74, 0.4);
+}
+
+body.theme-street .shop-sign-black {
+    color: #ffc27a;
+    border-color: #ffc27a;
+    text-shadow: 0 0 6px #ffc27a, 0 0 14px #f2a24a;
+    box-shadow: 0 0 10px rgba(255, 194, 122, 0.5), inset 0 0 8px rgba(255, 194, 122, 0.3);
+}
+
+body.theme-street .shop-slot {
+    background: linear-gradient(160deg, #2b2740, #1d1a2b);
+    border: 1px solid #47465c;
+}
+
+body.theme-street .shop-slot-stock {
+    color: #9c96ad;
+}
+
+body.theme-street .map-person {
+    border-bottom: 1px solid #2b2740;
+}
+
+@media (min-width: 900px) {
+    body.theme-street #app {
+        border: 1px solid #2b2740;
+    }
+    body.theme-street .bottom-nav {
+        border-right: 1px solid #2b2740;
+    }
+    body.theme-street .nav-btn.active {
+        background: #2b2740;
+    }
+}
+
+body.theme-street .cosmetic-gradient-name {
+    background: linear-gradient(90deg, #f2a24a, #ffc27a, #74b9ff, #f2a24a);
+}
+
+body.theme-street .profile-avatar-neon {
+    border: 2px solid #ffc27a;
+    box-shadow: 0 0 10px rgba(255, 194, 122, 0.7), 0 0 22px rgba(255, 194, 122, 0.4);
+}
+
+body.theme-street .duel-card {
+    background: linear-gradient(160deg, #1d1a2b, #1d1a2b);
+}
+
+body.theme-street .duel-avatar {
+    background: #2b2740;
+    border: 2px solid #47465c;
+}
+
+body.theme-street .market-buyer-clickable {
+    color: #ffc27a;
+}
+
+body.theme-street .duel-vs-badge {
+    background: #1d1a2b;
+}
+
+body.theme-street .duel-names-row {
+    color: #b9b3c9;
+}
+
+body.theme-street .stats-tile {
+    background: linear-gradient(160deg, #2b2740, #1d1a2b);
+}
+
+body.theme-street .stats-tile-value {
+    color: #ffc27a;
+}
+
+body.theme-street .stats-tile-label {
+    color: #9c96ad;
+}
+
+body.theme-street .lb-move-same {
+    color: #9c96ad;
+}
+
+body.theme-street .cosmetics-preview {
+    background: #16131f;
+    border: 1px dashed #47465c;
+}
+
+body.theme-street .news-tv {
+    background: #12101a;
+    border: 3px solid #2b2740;
+}
+
+body.theme-street .news-tv-header {
+    color: #b9b3c9;
+}
+
+body.theme-street .news-tv-screen {
+    background: #0f0d16;
+    border: 1px solid #1d1a2b;
+}
+
+body.theme-street .work-banner {
+    color: #ffc27a;
+    text-shadow: 0 0 8px rgba(255, 194, 122, 0.5);
+    border-bottom: 2px solid #47465c;
+}
+
+body.theme-street .riot-progress-track {
+    background: #1d1a2b;
+    border: 1px solid #2b2740;
+}
+
+body.theme-street .riot-progress-fill-army {
+    background: linear-gradient(90deg, #f2a24a, #74b9ff);
+}
+
+body.theme-street .chat-room-banner-general {
+    color: #ffc27a;
+    text-shadow: 0 0 8px rgba(255, 194, 122, 0.5);
+    border-bottom-color: #47465c;
+}
+
+body.theme-street .chest-overlay-box {
+    background: linear-gradient(160deg, #2b2740, #1d1a2b);
+}
+
+body.theme-street .chest-overlay-title {
+    color: #9c96ad;
+}
+
+body.theme-street .profile-overlay-box {
+    background: #1d1a2b;
+    border: 1px solid #2b2740;
+}
+
+body.theme-street .profile-buff-row {
+    border-top: 1px solid #2b2740;
+}
+
+body.theme-street .buff-icon-btn {
+    background-color: #1d1a2b;
+}
+
+body.theme-street .exam-info-summary {
+    color: #ffc27a;
+}
+
+body.theme-street .exam-info-point {
+    color: #d9d3e3;
+}
+
+body.theme-street .gov-hall-card {
+    background: url("assets/backgrounds/gov-hall-bg.jpg"),
+        radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08), transparent 55%),
+        linear-gradient(160deg, #1d1a2b, #101216);
+}
+
+body.theme-street .gov-flag-blank {
+    background: #2b2740;
+    color: #8f89a0;
+}
+
+body.theme-street .gov-stat-label {
+    color: #b9b3c9;
+}
+
+body.theme-street .gov-election-card {
+    background: linear-gradient(160deg, #1d1a2b, #16131f);
+}
+
+body.theme-street .gov-election-card::before {
+    background: #16131f;
+}
+
+body.theme-street .gov-vote-btn {
+    background: #2b2740;
+    border: 1px solid #47465c;
+}
+
+body.theme-street .gov-vote-btn:hover {
+    background: #332f45;
+}
+
+body.theme-street .gov-voters-line {
+    color: #8f89a0;
+}
+
+body.theme-street .gov-action-card {
+    background: linear-gradient(160deg, #1d1a2b, #16131f);
+}
+
+body.theme-street .map-fullscreen-overlay {
+    background: radial-gradient(circle at 20% 10%, rgba(242, 162, 74, 0.10), transparent 50%),
+        radial-gradient(circle at 80% 90%, rgba(212, 175, 55, 0.06), transparent 50%),
+        #12101a;
+}
+
+body.theme-street .map-fullscreen-header {
+    background: linear-gradient(180deg, #1d1a2b, #16131f);
+}
+
+body.theme-street .map-marker-label {
+    fill: #b9b3c9;
+}
+
+body.theme-street .map-moving-bg {
+    fill: #1d1a2b;
+}
+
+body.theme-street .map-moving-info-dot {
+    stroke: #16131f;
+}
+
+body.theme-street .map-moving-info-i {
+    fill: #16131f;
+}
+
+body.theme-street .profile-asset-btn {
+    background: #1d1a2b;
+    border: 1px solid #47465c;
+}
+
+body.theme-street .zavod-tool-btn {
+    background: linear-gradient(160deg, #2b2740, #1d1a2b);
+    border: 1px solid #47465c;
+}
+
+body.theme-street .zavod-tool-label {
+    color: #d9d3e3;
+}
+
+body.theme-street .intro-section {
+    background: linear-gradient(160deg, #1d1a2b, #1d1a2b);
+}
+
+body.theme-street .intro-heading {
+    color: #ffc27a;
+}
+
+body.theme-street .intro-text {
+    color: #d9d3e3;
+}
+
+body.theme-street .profession-info-btn {
+    background: #47465c;
+}
+
+/* ---------- Часть 2: ручные правила темы ---------- */
+
+/* ======================================================================
+   Тема «Вечерняя улица» — включается флагом USE_STREET_THEME в
+   js/themeConfig.js (класс theme-street на body). Всё ниже действует ТОЛЬКО
+   при включённой теме, прежний вид остаётся нетронутым.
+   Палитра: небо #1d1a2b, сумерки #47465c, кирпич вывесок #3a2426,
+   фонарь #f2a24a, бумага #efe6d8, тревога #ff5a5f.
+   ====================================================================== */
+
+body.theme-street {
+    font-family: "Golos Text", -apple-system, "Segoe UI", sans-serif;
+    color: #efe6d8;
+    background:
+        linear-gradient(rgba(22, 19, 31, 0.55), rgba(22, 19, 31, 0.85)),
+        url("assets/backgrounds/game-bg.jpg"),
+        #16131f;
+    background-size: auto, cover, auto;
+    background-position: center, 62% top, center;
+    background-repeat: no-repeat;
+}
+
+body.theme-street .card {
+    background: rgba(29, 26, 43, 0.92);
+    border: 1px solid #332f45;
+    border-radius: 14px;
+}
+
+body.theme-street .title {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-weight: 400;
+    color: #ffe3bd;
+    letter-spacing: 0.3px;
+}
+
+body.theme-street .subtitle,
+body.theme-street .profile-dim {
+    color: #b9b3c9;
+}
+
+body.theme-street .profile-row {
+    color: #efe6d8;
+}
+
+body.theme-street .btn {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-weight: 400;
+    background: #f2a24a;
+    color: #2a1a0c;
+    box-shadow: none;
+    border-radius: 10px;
+}
+
+body.theme-street .btn:active {
+    background: #d9892f;
+}
+
+body.theme-street .btn-secondary {
+    background: transparent;
+    color: #efe6d8;
+    border: 1px solid #47465c;
+}
+
+body.theme-street .option-btn {
+    background: rgba(29, 26, 43, 0.92);
+    border: 1px solid #332f45;
+    color: #efe6d8;
+}
+
+body.theme-street .progress-bar {
+    background: #2b2740;
+}
+
+body.theme-street .progress-bar-fill {
+    background: #f2a24a;
+    box-shadow: none;
+}
+
+body.theme-street .bottom-nav {
+    background: rgba(22, 19, 31, 0.96);
+    border-top: 1px solid #332f45;
+}
+
+body.theme-street .nav-btn {
+    color: #b9b3c9;
+    font-family: "Golos Text", sans-serif;
+}
+
+body.theme-street .nav-btn.active {
+    color: #f2a24a;
+    text-shadow: none;
+}
+
+/* Иконки эффектов — ваши нарисованные плитки: крупнее, рамка по смыслу */
+body.theme-street .buff-icon-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background-color: #1d1a2b;
+    padding: 0;
+    overflow: hidden;
+}
+
+body.theme-street .buff-icon-btn img {
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+body.theme-street .buff-icon-positive {
+    border-color: #f2a24a;
+}
+
+body.theme-street .buff-icon-negative {
+    border-color: #ff5a5f;
+}
+
+/* Шапка профиля: кусок вашей улицы + имя игрока на вывеске */
+.street-hero {
+    height: 170px;
+    border-radius: 14px;
+    background: url("assets/backgrounds/game-bg.jpg") 64% 38% / cover no-repeat, #1d1a2b;
+    border: 1px solid #332f45;
+}
+
+.street-sign {
+    position: relative;
+    margin: -30px 20px 14px;
+    background: #3a2426;
+    border: 2px solid #f2a24a;
+    border-radius: 6px;
+    padding: 10px 14px 12px;
+    text-align: center;
+}
+
+.street-sign-name {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 21px;
+    color: #ffe3bd;
+    letter-spacing: 0.4px;
+    word-break: break-word;
+}
+
+.street-sign-sub {
+    font-size: 14px;
+    color: #d9c7ae;
+    margin-top: 2px;
+}

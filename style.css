@@ -4,6 +4,17 @@
     padding: 0;
 }
 
+/* Безопасное масштабирование медиа во фрейме/WebView VK */
+img, svg, video {
+    max-width: 100%;
+    height: auto;
+}
+
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+}
+
 body {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     /* Собственный фон (assets/backgrounds/game-bg.jpg) рисуется ПОВЕРХ градиента —
@@ -18,9 +29,11 @@ body {
     background-size: cover, auto, auto, auto;
     background-position: center, center, center, center;
     background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
-    background-attachment: fixed;
+    background-color: #0c1120;
     color: #eee;
     min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
     display: flex;
     justify-content: center;
 }
@@ -34,6 +47,14 @@ body {
     display: flex;
     flex-direction: column;
     padding: 16px;
+    min-height: 100dvh;
+    position: relative;
+}
+
+/* Когда внутри оболочка с меню — отступы даёт .screen-content, а #app
+   только учитывает безопасные зоны VK (шапка, «чёлка», нижняя полоска). */
+#app.has-shell {
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
 .loading {
@@ -198,8 +219,10 @@ body {
 .screen-content {
     flex: 1;
     padding: 16px;
-    padding-bottom: 8px;
+    padding-bottom: 12px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0;
 }
 
 .bottom-nav {
@@ -306,18 +329,17 @@ body {
     height: 64px;
     border-radius: 50%;
     object-fit: cover;
+    border: 2px solid #3a4568;
     display: block;
 }
 
-/* Отдельный класс для гифки-рамки */
-.avatar-frame {
-    background-image: url("assets/frame avatar brill.gif");
-    background-size: cover;
-    padding: 4px; /* Создает отступ, чтобы рамка не налезла вплотную на лицо */
-    border-radius: 50%;
+.profile-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: #232d47;
 }
-
-
 
 .profile-main-col {
     flex: 2 1 200px;
@@ -780,15 +802,29 @@ body {
    гибкими блоками, обрезая ячейки). */
 
 @media (min-width: 900px) {
+    /* Десктоп VK открывает мини-приложение во фрейме ограниченной ширины:
+       рисуем игру аккуратным окном по центру — меню слева, контент на всю
+       оставшуюся ширину (без искусственного max-width, из-за которого
+       справа оставалась пустая полоса). */
     body {
-        align-items: stretch;
+        align-items: center;
     }
 
     #app {
-        max-width: 1200px;
+        max-width: 1000px;
+        height: 92vh;
+        min-height: 600px;
+        max-height: 820px;
+        border-radius: 16px;
+        border: 1px solid #232d47;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+    }
+
+    #app.has-shell {
         flex-direction: row;
+        overflow: hidden;
         padding: 0;
-        margin: 0 auto;
     }
 
     .bottom-nav {
@@ -801,7 +837,7 @@ body {
         padding: 20px 10px;
         overflow-x: visible;
         overflow-y: auto;
-        gap: 2px;
+        gap: 4px;
     }
 
     .nav-btn {
@@ -813,6 +849,7 @@ body {
         font-size: 14px;
         white-space: normal;
         min-width: 0;
+        width: 100%;
     }
 
     .nav-btn.active {
@@ -826,19 +863,18 @@ body {
     .screen-content {
         flex: 1;
         padding: 24px 28px;
-        max-width: 720px;
+        min-width: 0;
     }
 
     .chat-messages {
-        height: 560px;
+        height: 480px;
+        max-height: 60vh;
     }
 
-    /* Карта — единственное исключение из общего ограничения ширины контента.
-       При новой, более высокой пропорции (700x820) нельзя давать ей ту же
-       ширину, что и раньше — экран был бы больше 1000px высотой. */
     .map-svg-card {
         max-width: 620px;
         width: 100%;
+        margin: 0 auto;
     }
 }
 
@@ -920,7 +956,7 @@ body {
 }
 
 .profile-avatar-neon {
-    background-image: url("assets/frame avatar brill.gif");
+    border: 2px solid #a29bfe;
     box-shadow: 0 0 10px rgba(162, 155, 254, 0.7), 0 0 22px rgba(162, 155, 254, 0.4);
 }
 
@@ -2816,151 +2852,4 @@ body.fire-event-theme .bottom-nav {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-}
-
-/* ======================================================================
-   Тема «Вечерняя улица» — включается флагом USE_STREET_THEME в
-   js/themeConfig.js (класс theme-street на body). Всё ниже действует ТОЛЬКО
-   при включённой теме, прежний вид остаётся нетронутым.
-   Палитра: небо #1d1a2b, сумерки #47465c, кирпич вывесок #3a2426,
-   фонарь #f2a24a, бумага #efe6d8, тревога #ff5a5f.
-   ====================================================================== */
-
-body.theme-street {
-    font-family: "Golos Text", -apple-system, "Segoe UI", sans-serif;
-    color: #efe6d8;
-    background:
-        linear-gradient(rgba(22, 19, 31, 0.55), rgba(22, 19, 31, 0.85)),
-        url("assets/backgrounds/game-bg.jpg"),
-        #16131f;
-    background-size: auto, cover, auto;
-    background-position: center, 62% top, center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-}
-
-body.theme-street .card {
-    background: rgba(29, 26, 43, 0.92);
-    border: 1px solid #332f45;
-    border-radius: 14px;
-}
-
-body.theme-street .title {
-    font-family: "Russo One", "Golos Text", sans-serif;
-    font-weight: 400;
-    color: #ffe3bd;
-    letter-spacing: 0.3px;
-}
-
-body.theme-street .subtitle,
-body.theme-street .profile-dim {
-    color: #b9b3c9;
-}
-
-body.theme-street .profile-row {
-    color: #efe6d8;
-}
-
-body.theme-street .btn {
-    font-family: "Russo One", "Golos Text", sans-serif;
-    font-weight: 400;
-    background: #f2a24a;
-    color: #2a1a0c;
-    box-shadow: none;
-    border-radius: 10px;
-}
-
-body.theme-street .btn:active {
-    background: #d9892f;
-}
-
-body.theme-street .btn-secondary {
-    background: transparent;
-    color: #efe6d8;
-    border: 1px solid #47465c;
-}
-
-body.theme-street .option-btn {
-    background: rgba(29, 26, 43, 0.92);
-    border: 1px solid #332f45;
-    color: #efe6d8;
-}
-
-body.theme-street .progress-bar {
-    background: #2b2740;
-}
-
-body.theme-street .progress-bar-fill {
-    background: #f2a24a;
-    box-shadow: none;
-}
-
-body.theme-street .bottom-nav {
-    background: rgba(22, 19, 31, 0.96);
-    border-top: 1px solid #332f45;
-}
-
-body.theme-street .nav-btn {
-    color: #b9b3c9;
-    font-family: "Golos Text", sans-serif;
-}
-
-body.theme-street .nav-btn.active {
-    color: #f2a24a;
-    text-shadow: none;
-}
-
-/* Иконки эффектов — ваши нарисованные плитки: крупнее, рамка по смыслу */
-body.theme-street .buff-icon-btn {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
-    background-color: #1d1a2b;
-    padding: 0;
-    overflow: hidden;
-}
-
-body.theme-street .buff-icon-btn img {
-    object-fit: cover;
-    border-radius: 6px;
-}
-
-body.theme-street .buff-icon-positive {
-    border-color: #f2a24a;
-}
-
-body.theme-street .buff-icon-negative {
-    border-color: #ff5a5f;
-}
-
-/* Шапка профиля: кусок вашей улицы + имя игрока на вывеске */
-.street-hero {
-    height: 170px;
-    border-radius: 14px;
-    background: url("assets/backgrounds/game-bg.jpg") 64% 38% / cover no-repeat, #1d1a2b;
-    border: 1px solid #332f45;
-}
-
-.street-sign {
-    position: relative;
-    margin: -30px 20px 14px;
-    background: #3a2426;
-    border: 2px solid #f2a24a;
-    border-radius: 6px;
-    padding: 10px 14px 12px;
-    text-align: center;
-}
-
-.street-sign-name {
-    font-family: "Russo One", "Golos Text", sans-serif;
-    font-size: 21px;
-    color: #ffe3bd;
-    letter-spacing: 0.4px;
-    word-break: break-word;
-}
-
-.street-sign-sub {
-    font-size: 14px;
-    color: #d9c7ae;
-    margin-top: 2px;
 }

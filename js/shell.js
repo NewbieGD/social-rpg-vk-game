@@ -21,7 +21,7 @@ import { renderNationalEventScreen } from "./screens/nationalEvent.js";
 // Единственный переключатель для отката "карта города как главный экран":
 // поставь false — и всё вернётся ровно к прежнему поведению (профиль +
 // нижняя навигация), ни строчки остального кода трогать не придётся.
-import { USE_TOWN_MAP_HOME } from "./mapConfig.js";
+import { USE_TOWN_MAP_HOME } from "./themeConfig.js";
 
 const BASE_NAV_ITEMS = [
     { id: "profile", icon: "👤", label: "Профиль", render: renderProfileScreen },
@@ -93,6 +93,7 @@ export async function renderShell(appRoot) {
         navItems = navItems.filter((item) => item.id !== "license");
     }
 
+    appRoot.classList.add("has-shell");
     appRoot.innerHTML = `
         <div id="screen-content" class="screen-content"></div>
         <nav class="bottom-nav" id="bottom-nav"></nav>
