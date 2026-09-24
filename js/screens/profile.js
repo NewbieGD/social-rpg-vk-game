@@ -13,7 +13,7 @@ import { PROFESSION_INFO } from "../professionInfo.js";
 
 const COSMETIC_NAMES = {
     golden_name: "Золотое имя", gradient_name: "Градиентное имя", vip_badge: "Значок VIP",
-    profile_frame_neon: "Неоновая рамка", profile_frame_gold: "Золотая рамка", profile_frame_ice: "Ледяная рамка",
+    profile_frame_neon: "Неоновая рамка", profile_frame_gold: "Золотая рамка", profile_frame_ice: "Ледяная рамка", profile_frame_brill: "Бриллиантовая рамка",
     crown_badge: "Корона", mansion: "Особняк",
 };
 
@@ -167,7 +167,13 @@ export async function renderProfileScreen(root) {
         mainLines.push(`<div class="profile-row profile-dim">🔗 Тебя пригласил(а): ${inviterName}</div>`);
     }
 
-    const FRAME_CLASSES = { profile_frame_neon: " profile-avatar-neon", profile_frame_gold: " profile-avatar-gold", profile_frame_ice: " profile-avatar-ice" };
+    const FRAME_CLASSES = { profile_frame_neon: " profile-avatar-neon", profile_frame_gold: " profile-avatar-gold", profile_frame_ice: " profile-avatar-ice", profile_frame_brill: " profile-avatar-brill" };
+    // Анимированные рамки — отдельная картинка (гифка) поверх аватара, а не
+    // CSS-обводка. Новую такую рамку добавлять сюда: код косметики -> путь к файлу.
+    const ANIMATED_FRAMES = { profile_frame_brill: "assets/frames/frame_avatar_brill.gif" };
+    const frameOverlay = !isPresident && ANIMATED_FRAMES[user.active_frame]
+        ? `<img class="avatar-frame-gif" src="${ANIMATED_FRAMES[user.active_frame]}" alt="" aria-hidden="true">`
+        : "";
     const avatarFrameClass = isPresident ? " profile-avatar-president" : FRAME_CLASSES[user.active_frame] || "";
 
     const buffIcons = (user.buffs || []).map((b, i) =>
@@ -188,7 +194,7 @@ export async function renderProfileScreen(root) {
             ${USE_STREET_THEME ? "" : `<div class="title">🎮 Твой профиль</div>`}
             <div class="profile-layout-v2">
                 <div class="profile-left-col">
-                    <div class="profile-avatar-col" id="profile-avatar-col"><div class="profile-avatar profile-avatar-placeholder${avatarFrameClass}">👤</div></div>
+                    <div class="profile-avatar-col" id="profile-avatar-col"><div class="avatar-frame-wrap"><div class="profile-avatar profile-avatar-placeholder${avatarFrameClass}">👤</div>${frameOverlay}</div></div>
                     <div class="profile-assets-row">
                         <button class="profile-asset-btn" id="profile-house-btn" title="Твой дом">${user.house_skin ? `<img src="assets/houses/${user.house_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.house_skin ? "display:none" : ""}">${user.has_house ? "🏠" : "🏗"}</span></button>
                         <button class="profile-asset-btn" id="profile-car-btn" title="Твоя машина">${user.car_skin ? `<img src="assets/cars/${user.car_skin}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ""}<span style="${user.car_skin ? "display:none" : ""}">${user.has_car ? "🚗" : "🚫"}</span></button>
@@ -237,7 +243,7 @@ export async function renderProfileScreen(root) {
         if (!info) return;
         if (info.photoUrl) {
             const col = root.querySelector("#profile-avatar-col");
-            if (col) col.innerHTML = `<img src="${info.photoUrl}" class="profile-avatar${avatarFrameClass}" alt="Фото профиля">`;
+            if (col) col.innerHTML = `<div class="avatar-frame-wrap"><img src="${info.photoUrl}" class="profile-avatar${avatarFrameClass}" alt="Фото профиля">${frameOverlay}</div>`;
         }
         if (info.fullName) {
             const slot = root.querySelector("#vk-fullname-slot");

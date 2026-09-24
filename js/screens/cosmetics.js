@@ -10,6 +10,7 @@ const PREVIEW_BUILDERS = {
     profile_frame_neon: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-neon cosmetics-preview-avatar">👤</div></div>`,
     profile_frame_gold: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-gold cosmetics-preview-avatar">👤</div></div>`,
     profile_frame_ice: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-ice cosmetics-preview-avatar">👤</div></div>`,
+    profile_frame_brill: () => `<div class="cosmetics-preview"><div class="avatar-frame-wrap"><div class="profile-avatar profile-avatar-placeholder profile-avatar-brill cosmetics-preview-avatar">👤</div><img class="avatar-frame-gif" src="assets/frames/frame_avatar_brill.gif" alt="" aria-hidden="true"></div></div>`,
     mansion: () => `<div class="cosmetics-preview" style="font-size:32px">🏰</div>`,
 };
 

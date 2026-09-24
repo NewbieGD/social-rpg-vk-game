@@ -2853,3 +2853,32 @@ body.fire-event-theme .bottom-nav {
     max-height: 100%;
     object-fit: contain;
 }
+
+/* ---------- Анимированные рамки аватара (гифка поверх фото) ---------- */
+
+.avatar-frame-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+
+/* Сама гифка: кладётся поверх аватара и чуть выходит за его края, чтобы
+   рамка «обнимала» фото. Картинка прямоугольная — растягиваем по квадрату
+   аватара. max-width: none перебивает общее правило img { max-width: 100% }. */
+.avatar-frame-gif {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 132%;
+    height: 132%;
+    max-width: none;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    object-fit: fill;
+}
+
+/* Под прямоугольную рамку аватар делаем скруглённым квадратом без обводки */
+.profile-avatar-brill {
+    border: none;
+    border-radius: 12px;
+}
