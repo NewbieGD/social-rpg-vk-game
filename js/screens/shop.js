@@ -1,4 +1,6 @@
 import { apiFetch } from "../api.js";
+import { USE_STREET_THEME } from "../themeConfig.js";
+import { screenHeader } from "../screenHeader.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 
 const ITEM_ICONS = {
@@ -10,6 +12,13 @@ const ITEM_ICONS = {
     blat: "🫱", lock: "🔐", license: "🪪",
     thief_note: "🕵️", recruitment_list: "📋", stash: "🗝",
 };
+
+// Картинка товара: если в assets/items/ лежит <код>.png — показывается она,
+// иначе эмодзи из ITEM_ICONS (как сейчас). Картинки можно добавлять по
+// одной, без правок кода.
+function itemIconHtml(code) {
+    return `<img class="shop-item-img" src="assets/items/${code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${iconFor(code)}</span>`;
+}
 
 function iconFor(code) {
     return ITEM_ICONS[code] || "📦";
@@ -92,11 +101,17 @@ function renderShelves(root, items, profile, mode) {
     const isBlackMarket = mode === "blackmarket";
 
     root.innerHTML = `
-        <div class="shop-sign-wrap">
+        ${USE_STREET_THEME
+            ? screenHeader({
+                scene: isBlackMarket ? "blackmarket" : "shop",
+                title: isBlackMarket ? "Чёрный рынок" : "Магазин",
+                sub: `Твой баланс: ${Number(profile.balance).toFixed(2)} ₭`,
+            })
+            : `<div class="shop-sign-wrap">
             <div class="shop-sign ${isBlackMarket ? "shop-sign-black" : ""}">${isBlackMarket ? "🕶 ЧЁРНЫЙ ВХОД" : "ОТКРЫТО"}</div>
         </div>
         <div class="title">${isBlackMarket ? "🕶 Чёрный рынок" : "🛍 Магазин"}</div>
-        <div class="shop-balance-banner">💰 Твой баланс: <b>${Number(profile.balance).toFixed(2)}₭</b></div>
+        <div class="shop-balance-banner">💰 Твой баланс: <b>${Number(profile.balance).toFixed(2)}₭</b></div>`}
         <div id="stash-balance-banner"></div>
         <div class="subtitle">Нажми на товар на полке, чтобы узнать, что он даёт</div>
         ${isBlackMarket ? "" : `<button class="btn btn-secondary" id="my-deliveries-btn" style="margin-bottom:10px">📦 Что мне везут</button>`}
@@ -109,7 +124,9 @@ function renderShelves(root, items, profile, mode) {
     }
 
     const shelves = root.querySelector("#shelves");
-    const perShelf = 4;
+    // На широком экране (десктоп VK) полка длиннее — ставим больше товаров в ряд,
+    // иначе половина полки пустует.
+    const perShelf = window.innerWidth >= 900 ? 8 : 4;
     for (let i = 0; i < items.length; i += perShelf) {
         const shelf = document.createElement("div");
         shelf.className = "shop-shelf";
@@ -130,7 +147,7 @@ function renderShelves(root, items, profile, mode) {
             const outOfStock = item.stock === 0;
             if (outOfStock) slot.classList.add("shop-slot-empty");
             slot.innerHTML = `
-                <div class="shop-slot-icon">${iconFor(item.code)}</div>
+                <div class="shop-slot-icon">${itemIconHtml(item.code)}</div>
                 <div class="shop-slot-price">${Number(item.price).toFixed(0)}₭</div>
                 ${trendBadge ? `<div class="shop-slot-badge">${trendBadge}</div>` : ""}
                 ${item.stock !== null && item.stock !== undefined ? `<div class="shop-slot-stock">${outOfStock ? "нет в наличии" : "ост. " + item.stock}</div>` : ""}

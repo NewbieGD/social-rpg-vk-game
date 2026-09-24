@@ -1,10 +1,11 @@
 import { apiFetch } from "../api.js";
 import { requestVkNotifications } from "../vk.js";
 import { showGameStylePopup } from "../gamePopup.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderNotificationsScreen(root) {
     root.innerHTML = `
-        <div class="title">🔔 Уведомления</div>
+        ${screenHeader({ scene: "notifications", title: "Уведомления", sub: "Личные события и новости страны", fallbackTitle: "🔔 Уведомления" })}
         <button class="btn btn-secondary" id="vk-push-btn" style="margin-bottom:10px">🔔 Дублировать в push ВКонтакте</button>
         <div class="tab-row">
             <button class="tab-btn active" id="tab-personal">🔔 Личные</button>
