@@ -1,6 +1,6 @@
 /* theme-street.css — тема «Вечерняя улица».
    Действует только при body.theme-street (флаг USE_STREET_THEME в js/themeConfig.js).
-   Часть 1 сгенерирована автоматически из style.css (служебный скрипт, в проект не входит):
+   Часть 1 сгенерирована автоматически из style.css (/home/claude/gen_theme.py):
    старая сине-фиолетовая палитра -> ночь, небо и свет фонарей. Часть 2 — ручные правила. */
 
 /* ---------- Часть 1: авто-перекраска всех экранов ---------- */
@@ -207,11 +207,11 @@ body.theme-street .map-person {
     body.theme-street #app {
         border: 1px solid #2b2740;
     }
-    body.theme-street .bottom-nav {
-        border-right: 1px solid #2b2740;
-    }
     body.theme-street .nav-btn.active {
         background: #2b2740;
+    }
+    body.theme-street .screen-content {
+        border-left: 1px solid #2b2740;
     }
 }
 

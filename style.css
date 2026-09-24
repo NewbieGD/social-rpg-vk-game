@@ -12,7 +12,29 @@ img, svg, video {
 
 html, body {
     width: 100%;
-    overflow-x: hidden;
+    /* clip, а не hidden: hidden делает body отдельной «коробкой прокрутки»,
+       и прилипающее меню на десктопе перестаёт прилипать. */
+    overflow-x: clip;
+}
+
+/* Тонкие тёмные полосы прокрутки в цвет игры вместо белых системных */
+html, * {
+    scrollbar-width: thin;
+    scrollbar-color: #47465c transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #47465c;
+    border-radius: 4px;
 }
 
 body {
@@ -806,38 +828,59 @@ body {
        рисуем игру аккуратным окном по центру — меню слева, контент на всю
        оставшуюся ширину (без искусственного max-width, из-за которого
        справа оставалась пустая полоса). */
+    /* Окно игры растёт по высоте контента, страница прокручивается целиком
+       (без отдельной полосы прокрутки внутри окна), а меню слева прилипает
+       к верху экрана. overflow: clip скругляет углы, не создавая своей
+       прокрутки — иначе «прилипание» меню бы не работало. */
     body {
-        align-items: center;
+        align-items: flex-start;
+        padding: 24px 0;
     }
 
     #app {
         max-width: 1000px;
-        height: 92vh;
         min-height: 600px;
-        max-height: 820px;
         border-radius: 16px;
         border: 1px solid #232d47;
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-        overflow-y: auto;
+        overflow: clip;
     }
 
     #app.has-shell {
         flex-direction: row;
-        overflow: hidden;
+        align-items: flex-start;
         padding: 0;
     }
 
+    /* Меню прилипает к верху экрана при прокрутке страницы. Если пунктов
+       больше, чем помещается по высоте, меню прокручивается само, без
+       видимой полосы. */
     .bottom-nav {
         order: -1;
         flex-direction: column;
         width: 210px;
         flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        max-height: 100vh;
         border-top: none;
-        border-right: 1px solid #232d47;
+        border-right: none;
         padding: 20px 10px;
         overflow-x: visible;
         overflow-y: auto;
+        scrollbar-width: none;
         gap: 4px;
+    }
+
+    .bottom-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Фон меню — прозрачный: иначе он обрывается под последним пунктом, а
+       ниже остаётся колонка другого оттенка. */
+    #app .bottom-nav {
+        background: transparent;
     }
 
     .nav-btn {
@@ -864,6 +907,9 @@ body {
         flex: 1;
         padding: 24px 28px;
         min-width: 0;
+        overflow: visible;
+        align-self: stretch;
+        border-left: 1px solid #232d47;
     }
 
     .chat-messages {
@@ -2881,4 +2927,84 @@ body.fire-event-theme .bottom-nav {
 .profile-avatar-brill {
     border: none;
     border-radius: 12px;
+}
+
+/* ---------- Рамки вывески с именем и карточки профиля (косметика) ----------
+   Все анимации — чистый CSS, без картинок. Селекторы продублированы с
+   body.theme-street, чтобы перебить обычную рамку карточки в теме улицы. */
+
+.other-profile-avatar {
+    margin-bottom: 10px;
+}
+
+.street-sign.sign-frame-gold {
+    border-color: #e9c46a;
+    animation: frame-glow-gold 3s ease-in-out infinite;
+}
+
+.street-sign.sign-frame-neon {
+    border-color: #ff5a8a;
+    animation: frame-neon-flicker 5s linear infinite;
+}
+
+.street-sign.sign-frame-neon .street-sign-name {
+    text-shadow: 0 0 8px rgba(255, 90, 138, 0.7);
+}
+
+.street-sign.sign-frame-fire {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(#3a2426, #3a2426) padding-box,
+        linear-gradient(90deg, #ff4d2e, #ffb347, #ff4d2e, #ffb347, #ff4d2e) border-box;
+    background-size: 100% 100%, 300% 100%;
+    animation: frame-run 2.4s linear infinite;
+}
+
+.card.card-frame-gold,
+body.theme-street .card.card-frame-gold {
+    border: 2px solid #e9c46a;
+    animation: frame-glow-gold 3.5s ease-in-out infinite;
+}
+
+.card.card-frame-neon,
+body.theme-street .card.card-frame-neon {
+    border: 2px solid #5ee6ff;
+    animation: frame-neon-pulse 2.8s ease-in-out infinite;
+}
+
+.card.card-frame-aurora,
+body.theme-street .card.card-frame-aurora {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(#1d1a2b, #1d1a2b) padding-box,
+        linear-gradient(90deg, #3ee6b5, #7c6cff, #f2a24a, #3ee6b5, #7c6cff) border-box;
+    background-size: 100% 100%, 300% 100%;
+    animation: frame-run 7s linear infinite;
+}
+
+@keyframes frame-glow-gold {
+    0%, 100% { box-shadow: 0 0 0 rgba(233, 196, 106, 0); }
+    50% { box-shadow: 0 0 16px rgba(233, 196, 106, 0.55); }
+}
+
+@keyframes frame-neon-flicker {
+    0%, 18%, 22%, 60%, 64%, 100% { box-shadow: 0 0 10px rgba(255, 90, 138, 0.75); border-color: #ff5a8a; }
+    20%, 62% { box-shadow: none; border-color: #7a2f45; }
+}
+
+@keyframes frame-neon-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(94, 230, 255, 0.45); border-color: #5ee6ff; }
+    50% { box-shadow: 0 0 18px rgba(255, 90, 200, 0.5); border-color: #ff5ac8; }
+}
+
+@keyframes frame-run {
+    from { background-position: 0 0, 0% 0; }
+    to { background-position: 0 0, 300% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .street-sign[class*="sign-frame-"],
+    .card[class*="card-frame-"] {
+        animation: none;
+    }
 }

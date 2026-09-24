@@ -11,6 +11,12 @@ const PREVIEW_BUILDERS = {
     profile_frame_gold: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-gold cosmetics-preview-avatar">👤</div></div>`,
     profile_frame_ice: () => `<div class="cosmetics-preview"><div class="profile-avatar profile-avatar-ice cosmetics-preview-avatar">👤</div></div>`,
     profile_frame_brill: () => `<div class="cosmetics-preview"><div class="avatar-frame-wrap"><div class="profile-avatar profile-avatar-placeholder profile-avatar-brill cosmetics-preview-avatar">👤</div><img class="avatar-frame-gif" src="assets/frames/frame_avatar_brill.gif" alt="" aria-hidden="true"></div></div>`,
+    sign_frame_gold: () => `<div class="cosmetics-preview"><div class="street-sign sign-frame-gold" style="margin:0"><div class="street-sign-name">Имя Игрока</div></div></div>`,
+    sign_frame_neon: () => `<div class="cosmetics-preview"><div class="street-sign sign-frame-neon" style="margin:0"><div class="street-sign-name">Имя Игрока</div></div></div>`,
+    sign_frame_fire: () => `<div class="cosmetics-preview"><div class="street-sign sign-frame-fire" style="margin:0"><div class="street-sign-name">Имя Игрока</div></div></div>`,
+    card_frame_gold: () => `<div class="cosmetics-preview"><div class="card card-frame-gold" style="margin:0;padding:14px">Карточка профиля</div></div>`,
+    card_frame_neon: () => `<div class="cosmetics-preview"><div class="card card-frame-neon" style="margin:0;padding:14px">Карточка профиля</div></div>`,
+    card_frame_aurora: () => `<div class="cosmetics-preview"><div class="card card-frame-aurora" style="margin:0;padding:14px">Карточка профиля</div></div>`,
     mansion: () => `<div class="cosmetics-preview" style="font-size:32px">🏰</div>`,
 };
 

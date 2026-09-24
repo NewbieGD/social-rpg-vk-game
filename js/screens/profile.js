@@ -3,6 +3,7 @@ import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
 import { USE_TOWN_MAP_HOME } from "../themeConfig.js";
 import { USE_STREET_THEME } from "../themeConfig.js";
+import { AVATAR_FRAME_CLASSES, avatarFrameOverlay, avatarHtml, signFrameClass, cardFrameClass, nameStyleClass, nameBadges } from "../cosmeticFrames.js";
 import { getVkUserInfo } from "../vk.js";
 import { animateCounter } from "../fx.js";
 import { renderInventoryScreen } from "./inventory.js";
@@ -14,6 +15,8 @@ import { PROFESSION_INFO } from "../professionInfo.js";
 const COSMETIC_NAMES = {
     golden_name: "Золотое имя", gradient_name: "Градиентное имя", vip_badge: "Значок VIP",
     profile_frame_neon: "Неоновая рамка", profile_frame_gold: "Золотая рамка", profile_frame_ice: "Ледяная рамка", profile_frame_brill: "Бриллиантовая рамка",
+    sign_frame_gold: "Золотая вывеска", sign_frame_neon: "Неоновая вывеска", sign_frame_fire: "Огненная вывеска",
+    card_frame_gold: "Золотая рамка карточки", card_frame_neon: "Неоновая рамка карточки", card_frame_aurora: "Рамка «Северное сияние»",
     crown_badge: "Корона", mansion: "Особняк",
 };
 
@@ -167,13 +170,8 @@ export async function renderProfileScreen(root) {
         mainLines.push(`<div class="profile-row profile-dim">🔗 Тебя пригласил(а): ${inviterName}</div>`);
     }
 
-    const FRAME_CLASSES = { profile_frame_neon: " profile-avatar-neon", profile_frame_gold: " profile-avatar-gold", profile_frame_ice: " profile-avatar-ice", profile_frame_brill: " profile-avatar-brill" };
-    // Анимированные рамки — отдельная картинка (гифка) поверх аватара, а не
-    // CSS-обводка. Новую такую рамку добавлять сюда: код косметики -> путь к файлу.
-    const ANIMATED_FRAMES = { profile_frame_brill: "assets/frames/frame_avatar_brill.gif" };
-    const frameOverlay = !isPresident && ANIMATED_FRAMES[user.active_frame]
-        ? `<img class="avatar-frame-gif" src="${ANIMATED_FRAMES[user.active_frame]}" alt="" aria-hidden="true">`
-        : "";
+    const FRAME_CLASSES = AVATAR_FRAME_CLASSES;
+    const frameOverlay = avatarFrameOverlay(user.active_frame, isPresident);
     const avatarFrameClass = isPresident ? " profile-avatar-president" : FRAME_CLASSES[user.active_frame] || "";
 
     const buffIcons = (user.buffs || []).map((b, i) =>
@@ -183,14 +181,14 @@ export async function renderProfileScreen(root) {
     const streetSignSub = escapeHtml(user.profession_name || STAGE_NAMES[user.stage] || "");
     const streetHeader = USE_STREET_THEME ? `
         <div class="street-hero"></div>
-        <div class="street-sign">
+        <div class="street-sign${signFrameClass(user.active_sign_frame)}">
             <div class="street-sign-name"><span class="${nameClass}">${displayName}</span>${nameBadges ? " " + nameBadges : ""}</div>
             ${streetSignSub ? `<div class="street-sign-sub">${streetSignSub}</div>` : ""}
         </div>` : "";
 
     root.innerHTML = `
         ${streetHeader}
-        <div class="card${isPresident ? " profile-card-president" : ""}">
+        <div class="card${isPresident ? " profile-card-president" : ""}${cardFrameClass(user.active_card_frame)}">
             ${USE_STREET_THEME ? "" : `<div class="title">🎮 Твой профиль</div>`}
             <div class="profile-layout-v2">
                 <div class="profile-left-col">
@@ -597,6 +595,8 @@ function showCosmeticsPreviewPopup(root, user) {
         content.innerHTML = `
             <div class="profile-row">🖼 Рамка профиля: <b>${escapeHtml(frameText)}</b></div>
             <div class="profile-row">🔤 Стиль имени: <b>${escapeHtml(nameStyleText)}</b></div>
+            <div class="profile-row">🪧 Рамка вывески: <b>${escapeHtml(user.active_sign_frame ? (COSMETIC_NAMES[user.active_sign_frame] || user.active_sign_frame) : "не выбрана")}</b></div>
+            <div class="profile-row">🗂 Рамка карточки: <b>${escapeHtml(user.active_card_frame ? (COSMETIC_NAMES[user.active_card_frame] || user.active_card_frame) : "не выбрана")}</b></div>
             <div class="profile-dim" style="margin:8px 0">Все купленные варианты (рамки, цвет имени и т.д.) хранятся тут — заходи в Косметику, чтобы посмотреть, что куплено, и переключиться на другой вариант.</div>
             <button class="btn" id="cosmetics-go-btn">✨ Открыть Косметику</button>
         `;
@@ -687,13 +687,22 @@ export async function renderOtherProfile(root, targetVkId) {
     if (p.is_minister) badges.push(`🎩 ${p.minister_post_name}`);
     if (p.is_vor) badges.push("👑 Босс Мафии");
 
-    const photoHtml = p.vk_photo_url ? `<img src="${p.vk_photo_url}" class="oko-clicker-photo" style="width:64px;height:64px;margin-bottom:8px" alt="">` : "";
-    const displayName = p.vk_first_name || (p.username ? "@" + escapeHtml(p.username) : "ID " + p.vk_id);
+    const displayName = p.vk_first_name || (p.username ? "@" + p.username : "ID " + p.vk_id);
+    const otherNameClass = nameStyleClass(p.active_name_style);
+    const otherBadges = nameBadges(p.cosmetics);
+    const otherNameHtml = `<span class="${otherNameClass}">${escapeHtml(displayName)}</span>${otherBadges ? " " + otherBadges : ""}`;
+    const otherHeader = USE_STREET_THEME ? `
+        <div class="street-hero"></div>
+        <div class="street-sign${signFrameClass(p.active_sign_frame)}">
+            <div class="street-sign-name">${otherNameHtml}</div>
+            ${p.profession_name ? `<div class="street-sign-sub">${escapeHtml(p.profession_name)}</div>` : ""}
+        </div>` : "";
 
     root.innerHTML = `
-        <div class="card${p.is_president ? " profile-card-president" : ""}">
-            ${photoHtml}
-            <div class="title">👤 ${escapeHtml(displayName)}</div>
+        ${otherHeader}
+        <div class="card${p.is_president ? " profile-card-president" : ""}${cardFrameClass(p.active_card_frame)}">
+            <div class="other-profile-avatar">${avatarHtml(p.vk_photo_url, p.active_frame, p.is_president)}</div>
+            ${USE_STREET_THEME ? "" : `<div class="title">👤 ${otherNameHtml}</div>`}
             <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
             ${p.stage === "criminal" ? `<div class="profile-row">🔫 Авторитет: ${p.authority.toFixed(2)}/100</div>` : `<div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>`}
             <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>
