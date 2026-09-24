@@ -306,7 +306,12 @@ body {
     height: 64px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #3a4568;
+    /* Убираем старую рамку */
+    border: none; 
+    /* Доступ к вашей гифке */
+    background-image: url("assets/frame avatar brill.gif");
+    background-size: cover;
+    background-position: center;
     display: block;
 }
 
