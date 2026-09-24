@@ -5,4 +5,4 @@
 // просто экспортирован из shell.js), чтобы избежать циклического импорта —
 // shell.js сам импортирует profile.js, а profile.js тоже должен знать
 // значение этого флага.
-export const USE_TOWN_MAP_HOME = true;
+export const USE_TOWN_MAP_HOME = false;

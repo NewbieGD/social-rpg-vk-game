@@ -2,6 +2,7 @@ import { apiFetch, clearToken } from "../api.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
 import { USE_TOWN_MAP_HOME } from "../mapConfig.js";
+import { USE_STREET_THEME } from "../themeConfig.js";
 import { getVkUserInfo } from "../vk.js";
 import { animateCounter } from "../fx.js";
 import { renderInventoryScreen } from "./inventory.js";
@@ -73,7 +74,9 @@ export async function renderProfileScreen(root) {
         cosmetics.includes("vip_badge") ? "💎 VIP" : "",
     ].filter(Boolean).join(" ");
     const displayName = user.username ? "@" + escapeHtml(user.username) : "ID " + user.tg_id;
-    mainLines.push(`<div class="profile-row"><span class="${nameClass}">${displayName}</span>${nameBadges ? " " + nameBadges : ""}</div>`);
+    if (!USE_STREET_THEME) {
+        mainLines.push(`<div class="profile-row"><span class="${nameClass}">${displayName}</span>${nameBadges ? " " + nameBadges : ""}</div>`);
+    }
     mainLines.push(`<div class="profile-row profile-dim" id="vk-fullname-slot"></div>`);
     mainLines.push(`<div class="profile-row profile-dim">${user.has_incognito ? "🕵️ Инкогнито активно — никто не перейдёт в твой настоящий ВК." : "👁 Сейчас любой может перейти в твой настоящий профиль ВКонтакте. Не хочешь этого — купи «Инкогнито» в Магазине."}</div>`);
     mainLines.push(`<div class="subtitle">${STAGE_NAMES[user.stage] || user.stage}</div>`);
@@ -171,9 +174,18 @@ export async function renderProfileScreen(root) {
         `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}"><img src="assets/icons/${b.code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${b.icon}</span></button>`
     ).join("");
 
+    const streetSignSub = escapeHtml(user.profession_name || STAGE_NAMES[user.stage] || "");
+    const streetHeader = USE_STREET_THEME ? `
+        <div class="street-hero"></div>
+        <div class="street-sign">
+            <div class="street-sign-name"><span class="${nameClass}">${displayName}</span>${nameBadges ? " " + nameBadges : ""}</div>
+            ${streetSignSub ? `<div class="street-sign-sub">${streetSignSub}</div>` : ""}
+        </div>` : "";
+
     root.innerHTML = `
+        ${streetHeader}
         <div class="card${isPresident ? " profile-card-president" : ""}">
-            <div class="title">🎮 Твой профиль</div>
+            ${USE_STREET_THEME ? "" : `<div class="title">🎮 Твой профиль</div>`}
             <div class="profile-layout-v2">
                 <div class="profile-left-col">
                     <div class="profile-avatar-col" id="profile-avatar-col"><div class="profile-avatar profile-avatar-placeholder${avatarFrameClass}">👤</div></div>

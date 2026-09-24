@@ -2816,3 +2816,150 @@ body.fire-event-theme .bottom-nav {
     max-height: 100%;
     object-fit: contain;
 }
+
+/* ======================================================================
+   Тема «Вечерняя улица» — включается флагом USE_STREET_THEME в
+   js/themeConfig.js (класс theme-street на body). Всё ниже действует ТОЛЬКО
+   при включённой теме, прежний вид остаётся нетронутым.
+   Палитра: небо #1d1a2b, сумерки #47465c, кирпич вывесок #3a2426,
+   фонарь #f2a24a, бумага #efe6d8, тревога #ff5a5f.
+   ====================================================================== */
+
+body.theme-street {
+    font-family: "Golos Text", -apple-system, "Segoe UI", sans-serif;
+    color: #efe6d8;
+    background:
+        linear-gradient(rgba(22, 19, 31, 0.55), rgba(22, 19, 31, 0.85)),
+        url("assets/backgrounds/game-bg.jpg"),
+        #16131f;
+    background-size: auto, cover, auto;
+    background-position: center, 62% top, center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+body.theme-street .card {
+    background: rgba(29, 26, 43, 0.92);
+    border: 1px solid #332f45;
+    border-radius: 14px;
+}
+
+body.theme-street .title {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-weight: 400;
+    color: #ffe3bd;
+    letter-spacing: 0.3px;
+}
+
+body.theme-street .subtitle,
+body.theme-street .profile-dim {
+    color: #b9b3c9;
+}
+
+body.theme-street .profile-row {
+    color: #efe6d8;
+}
+
+body.theme-street .btn {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-weight: 400;
+    background: #f2a24a;
+    color: #2a1a0c;
+    box-shadow: none;
+    border-radius: 10px;
+}
+
+body.theme-street .btn:active {
+    background: #d9892f;
+}
+
+body.theme-street .btn-secondary {
+    background: transparent;
+    color: #efe6d8;
+    border: 1px solid #47465c;
+}
+
+body.theme-street .option-btn {
+    background: rgba(29, 26, 43, 0.92);
+    border: 1px solid #332f45;
+    color: #efe6d8;
+}
+
+body.theme-street .progress-bar {
+    background: #2b2740;
+}
+
+body.theme-street .progress-bar-fill {
+    background: #f2a24a;
+    box-shadow: none;
+}
+
+body.theme-street .bottom-nav {
+    background: rgba(22, 19, 31, 0.96);
+    border-top: 1px solid #332f45;
+}
+
+body.theme-street .nav-btn {
+    color: #b9b3c9;
+    font-family: "Golos Text", sans-serif;
+}
+
+body.theme-street .nav-btn.active {
+    color: #f2a24a;
+    text-shadow: none;
+}
+
+/* Иконки эффектов — ваши нарисованные плитки: крупнее, рамка по смыслу */
+body.theme-street .buff-icon-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background-color: #1d1a2b;
+    padding: 0;
+    overflow: hidden;
+}
+
+body.theme-street .buff-icon-btn img {
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+body.theme-street .buff-icon-positive {
+    border-color: #f2a24a;
+}
+
+body.theme-street .buff-icon-negative {
+    border-color: #ff5a5f;
+}
+
+/* Шапка профиля: кусок вашей улицы + имя игрока на вывеске */
+.street-hero {
+    height: 170px;
+    border-radius: 14px;
+    background: url("assets/backgrounds/game-bg.jpg") 64% 38% / cover no-repeat, #1d1a2b;
+    border: 1px solid #332f45;
+}
+
+.street-sign {
+    position: relative;
+    margin: -30px 20px 14px;
+    background: #3a2426;
+    border: 2px solid #f2a24a;
+    border-radius: 6px;
+    padding: 10px 14px 12px;
+    text-align: center;
+}
+
+.street-sign-name {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 21px;
+    color: #ffe3bd;
+    letter-spacing: 0.4px;
+    word-break: break-word;
+}
+
+.street-sign-sub {
+    font-size: 14px;
+    color: #d9c7ae;
+    margin-top: 2px;
+}

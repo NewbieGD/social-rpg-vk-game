@@ -4,6 +4,9 @@ import { apiFetch, saveToken, getToken } from "./api.js";
 import { renderExamScreen, renderPddScreen, renderChoosingScreen, renderCriminalOfferScreen } from "./screens/exam.js";
 import { renderIntroScreen } from "./screens/intro.js";
 import { renderShell } from "./shell.js";
+import { USE_STREET_THEME } from "./themeConfig.js";
+
+if (USE_STREET_THEME) document.body.classList.add("theme-street");
 
 const root = document.getElementById("app");
 

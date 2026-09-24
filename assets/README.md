@@ -294,3 +294,16 @@ height="32"` и `x="-16" y="-16"` — та же логика, что и с до�
 Если не появилась — самая частая причина: неверное имя файла (регистр
 важен — `Coffee.png` не сработает, нужно `coffee.png`) или неверное
 расширение (`.jpeg` вместо `.jpg`).
+
+---
+
+## Тема «Вечерняя улица» (добавлено)
+
+- Включается/выключается флагом `USE_STREET_THEME` в `js/themeConfig.js`.
+- Фон игры: `assets/backgrounds/game-bg.jpg` — сейчас там вечерняя улица.
+- Иконки эффектов в `assets/icons/` уже разложены по кодам:
+  `sick`, `fire`, `stove_fire`, `robbed`, `coffee`, `energy_drink`,
+  `energy_crash`, `vitamins`, `pills`, `gym`, `fire_insurance`,
+  `legal_insurance`, `lock`, `alcohol`, `alcohol_hangover`, `car`, `license`.
+- Пока без своей картинки (показывается эмодзи): `wounded`, `needs_rescue`,
+  `needs_home_repair`, `zavod`. Положи `<код>.png` 128×128 — подхватится сам.
