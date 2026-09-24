@@ -54,7 +54,7 @@ async function checkNewArrivals() {
     }
 }
 
-async function renderBlackMarket(root, profile) {
+export async function renderBlackMarket(root, profile) {
     root.innerHTML = `<div class="loading">Загружаем чёрный рынок…</div>`;
     let items;
     try {

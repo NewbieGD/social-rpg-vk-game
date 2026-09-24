@@ -2716,3 +2716,103 @@ body.fire-event-theme .bottom-nav {
     margin-top: 4px;
     box-sizing: border-box;
 }
+
+/* ---------- Карта города — главный экран-хаб (js/screens/townMap.js) ---------- */
+
+.town-map-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 4px;
+    gap: 10px;
+}
+.town-map-profile-widget {
+    display: flex;
+    gap: 8px;
+}
+.town-map-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+}
+.town-map-avatar-icon {
+    font-size: 22px;
+}
+.town-map-effects {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.town-map-effect-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+}
+.town-map-effect-buff {
+    background: rgba(126,231,135,0.25);
+}
+.town-map-effect-debuff {
+    background: rgba(255,110,110,0.25);
+}
+
+.town-map-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 8px 4px;
+}
+.town-map-building {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.15s ease;
+}
+.town-map-building:active {
+    transform: scale(0.94);
+    background: rgba(255,255,255,0.09);
+}
+.town-map-building-icon {
+    font-size: 30px;
+}
+.town-map-building-label {
+    font-size: 11px;
+    text-align: center;
+    opacity: 0.85;
+    line-height: 1.2;
+}
+
+.town-map-movements {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+}
+.town-map-movement-row {
+    font-size: 13px;
+    padding: 3px 0;
+    opacity: 0.85;
+}
+
+.map-asset-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}

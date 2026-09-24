@@ -18,6 +18,11 @@ import { renderBureaucratScreen } from "./screens/bureaucrat.js";
 import { renderNotificationsScreen } from "./screens/notifications.js";
 import { renderNationalEventScreen } from "./screens/nationalEvent.js";
 
+// Единственный переключатель для отката "карта города как главный экран":
+// поставь false — и всё вернётся ровно к прежнему поведению (профиль +
+// нижняя навигация), ни строчки остального кода трогать не придётся.
+import { USE_TOWN_MAP_HOME } from "./mapConfig.js";
+
 const BASE_NAV_ITEMS = [
     { id: "profile", icon: "👤", label: "Профиль", render: renderProfileScreen },
     { id: "notifications", icon: "🔔", label: "Уведомления", render: renderNotificationsScreen },
@@ -41,6 +46,13 @@ const PRESIDENT_NAV_ITEM = { id: "president", icon: "🎖", label: "Дела п�
 const STUDENT_NAV_ITEM = { id: "work", icon: "🎓", label: "Учёба", render: renderWorkScreen };
 
 export async function renderShell(appRoot) {
+    if (USE_TOWN_MAP_HOME) {
+        const { renderTownMapScreen } = await import("./screens/townMap.js");
+        appRoot.innerHTML = `<div id="screen-content" class="screen-content"></div>`;
+        await renderTownMapScreen(appRoot.querySelector("#screen-content"));
+        return;
+    }
+
     let isCriminal = false;
     let isPrisoner = false;
     let hasLicense = false;

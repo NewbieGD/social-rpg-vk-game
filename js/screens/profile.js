@@ -1,6 +1,7 @@
 import { apiFetch, clearToken } from "../api.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
+import { USE_TOWN_MAP_HOME } from "../mapConfig.js";
 import { getVkUserInfo } from "../vk.js";
 import { animateCounter } from "../fx.js";
 import { renderInventoryScreen } from "./inventory.js";
@@ -240,7 +241,9 @@ export async function renderProfileScreen(root) {
     const navCard = root.querySelector("#profile-right-col");
 
     addProfileNavBtn(navCard, "nav-inventory.png", "🎒", "Инвентарь", () => showOverlayScreen(renderInventoryScreen));
-    addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
+    if (!USE_TOWN_MAP_HOME) {
+        addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
+    }
     addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen), user.pending_duels_count || 0);
     addProfileNavBtn(navCard, "nav-cosmetics.png", "✨", "Косметика", () => showOverlayScreen(renderCosmeticsScreen));
     addProfileNavBtn(navCard, "nav-visitors.png", "👀", "Посетители", () => showOverlayScreen((el) => renderVisitorsOverlay(el)), user.new_visitors_count || 0);
