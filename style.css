@@ -920,7 +920,7 @@ body {
 }
 
 .profile-avatar-neon {
-    border: 2px solid #a29bfe;
+    background-image: url("assets/frame avatar brill.gif");
     box-shadow: 0 0 10px rgba(162, 155, 254, 0.7), 0 0 22px rgba(162, 155, 254, 0.4);
 }
 
