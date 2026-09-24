@@ -306,22 +306,18 @@ body {
     height: 64px;
     border-radius: 50%;
     object-fit: cover;
-    /* Убираем старую рамку */
-    border: none; 
-    /* Доступ к вашей гифке */
-    background-image: url("assets/frame avatar brill.gif");
-    background-size: cover;
-    background-position: center;
     display: block;
 }
 
-.profile-avatar-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    background: #232d47;
+/* Отдельный класс для гифки-рамки */
+.avatar-frame {
+    background-image: url("assets/frame avatar brill.gif");
+    background-size: cover;
+    padding: 4px; /* Создает отступ, чтобы рамка не налезла вплотную на лицо */
+    border-radius: 50%;
 }
+
+
 
 .profile-main-col {
     flex: 2 1 200px;
