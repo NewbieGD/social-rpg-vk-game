@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { playSuccessSound, playFailSound } from "../fx.js";
 
 const ROUND_SECONDS = 30;
@@ -15,7 +16,7 @@ const DOC_TYPES = [
 
 export async function renderBureaucratScreen(root) {
     root.innerHTML = `
-        <div class="title">🗂 Бюрократ</div>
+        ${screenHeader({ scene: "office", title: "Бюрократ", sub: "Разбери документы — помоги стране", fallbackTitle: "🗂 Бюрократ" })}
         <div class="card">
             <div class="subtitle">Раскидай документы по правильным лоткам, пока не кончилось время.</div>
             <div class="profile-dim bureaucrat-rules" style="margin:8px 0; line-height:1.5">

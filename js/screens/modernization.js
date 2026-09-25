@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderModernizationScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -16,7 +17,7 @@ export async function renderModernizationScreen(root) {
 
     const isPresident = !!profile.is_president;
 
-    root.innerHTML = `<div class="title">🏗 Модернизация государства</div><div id="mod-body"></div>`;
+    root.innerHTML = `${screenHeader({ scene: "school", title: "Модернизация", sub: "Развитие страны", fallbackTitle: "🏗 Модернизация государства" })}<div id="mod-body"></div>`;
     const body = root.querySelector("#mod-body");
 
     if (status.active) {

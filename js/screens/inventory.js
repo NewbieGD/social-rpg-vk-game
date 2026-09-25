@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 const ITEM_ICONS = {
     coffee: "☕", energy_drink: "⚡", energy_crash: "😵", alcohol: "🍺",
@@ -36,14 +37,14 @@ export async function renderInventoryScreen(root) {
 function renderGrid(root, items, isCriminal, pending, hasLicense) {
     if (items.length === 0 && pending.length === 0 && !hasLicense) {
         root.innerHTML = `
-            <div class="title">🎒 Инвентарь</div>
+            ${screenHeader({ scene: "home", title: "Инвентарь", sub: "Твои вещи", fallbackTitle: "🎒 Инвентарь" })}
             <div class="card"><div class="subtitle">Пусто. Загляни в 🛍 Магазин.</div></div>
         `;
         return;
     }
 
     root.innerHTML = `
-        <div class="title">🎒 Инвентарь</div>
+        ${screenHeader({ scene: "home", title: "Инвентарь", sub: "Твои вещи", fallbackTitle: "🎒 Инвентарь" })}
         <div class="subtitle">Нажми на ячейку, чтобы посмотреть, что с вещью можно сделать. Полупрозрачные ячейки — товар уже оплачен и едет к тебе.</div>
         <div id="inv-grid" class="inv-grid"></div>
     `;

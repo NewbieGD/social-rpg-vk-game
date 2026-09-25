@@ -1,8 +1,9 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderPresidentDealsScreen(root) {
     root.innerHTML = `
-        <div class="title">🎖 Дела президентские</div>
+        ${screenHeader({ scene: "government", title: "Дела президентские", sub: "Управление страной", fallbackTitle: "🎖 Дела президентские" })}
         <div class="card">
             <div class="subtitle">📊 Панель Президента</div>
             <div id="dashboard-stats" class="profile-dim">Загружаем…</div>

@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { DEV_MODE } from "../config.js";
 import { showGameStylePopup } from "../gamePopup.js";
 
@@ -32,7 +33,7 @@ export async function renderCosmeticsScreen(root) {
     }
 
     root.innerHTML = `
-        <div class="title">✨ Косметика</div>
+        ${screenHeader({ scene: "neon", title: "Косметика", sub: "Укрась свой профиль", fallbackTitle: "✨ Косметика" })}
         <div class="subtitle">Покупается за настоящие деньги (голоса ВКонтакте). Никак не влияет на игру — только выделяет тебя среди других.</div>
         ${!catalog.payments_enabled ? `<div class="card"><div class="profile-row" style="color:#ffb454">⚠️ Приём платежей ещё не включён администратором игры — покупка пока недоступна.</div></div>` : ""}
         <div id="cosmetics-list"></div>

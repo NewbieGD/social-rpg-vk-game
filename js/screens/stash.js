@@ -1,18 +1,19 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderStashScreen(root) {
-    root.innerHTML = `<div class="title">🗝 Тайник</div><div class="loading">Загружаем…</div>`;
+    root.innerHTML = `${screenHeader({ scene: "backyard", title: "Тайник", sub: "Спрятанные деньги", fallbackTitle: "🗝 Тайник" })}<div class="loading">Загружаем…</div>`;
 
     let status;
     try {
         status = await apiFetch("/api/stash/status");
     } catch (e) {
-        root.innerHTML = `<div class="title">🗝 Тайник</div><div class="error">${e.message}</div>`;
+        root.innerHTML = `${screenHeader({ scene: "backyard", title: "Тайник", sub: "Спрятанные деньги", fallbackTitle: "🗝 Тайник" })}<div class="error">${e.message}</div>`;
         return;
     }
 
     root.innerHTML = `
-        <div class="title">🗝 Тайник</div>
+        ${screenHeader({ scene: "backyard", title: "Тайник", sub: "Спрятанные деньги", fallbackTitle: "🗝 Тайник" })}
         <div class="card">
             <div class="profile-row">💰 Всего в тайнике: <b>${status.total.toFixed(2)}₭</b></div>
             <div class="profile-row" style="color:#7ee787">✅ Доступно к выводу: <b>${status.matured.toFixed(2)}₭</b></div>

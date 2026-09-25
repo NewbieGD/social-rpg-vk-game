@@ -1,13 +1,14 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderThiefBankScreen(root) {
-    root.innerHTML = `<div class="title">🏦 Банк воров</div><div class="loading">Загружаем…</div>`;
+    root.innerHTML = `${screenHeader({ scene: "crime", title: "Банк воров", sub: "Общая казна воров", fallbackTitle: "🏦 Банк воров" })}<div class="loading">Загружаем…</div>`;
 
     let data;
     try {
         data = await apiFetch("/api/stash/thief_bank");
     } catch (e) {
-        root.innerHTML = `<div class="title">🏦 Банк воров</div><div class="error">${e.message}</div>`;
+        root.innerHTML = `${screenHeader({ scene: "crime", title: "Банк воров", sub: "Общая казна воров", fallbackTitle: "🏦 Банк воров" })}<div class="error">${e.message}</div>`;
         return;
     }
 
@@ -19,7 +20,7 @@ export async function renderThiefBankScreen(root) {
     `).join("");
 
     root.innerHTML = `
-        <div class="title">🏦 Банк воров</div>
+        ${screenHeader({ scene: "crime", title: "Банк воров", sub: "Общая казна воров", fallbackTitle: "🏦 Банк воров" })}
         <div class="card">
             <div class="subtitle">Общая казна всех воров страны — управляется Боссом Мафии.</div>
             <div class="profile-row" style="font-size:20px">💰 Баланс: <b>${data.balance.toFixed(2)}₭</b></div>

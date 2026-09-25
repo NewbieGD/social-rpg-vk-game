@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { USE_NEW_CITY_MAP } from "../themeConfig.js";
 import { showGamePopupWithContent } from "../gamePopup.js";
 
 const VIEW_W = 700;
@@ -58,6 +59,12 @@ export async function renderMapScreen(root) {
     overlay.className = "map-fullscreen-overlay";
     overlay.innerHTML = `<div class="loading">Загружаем карту…</div>`;
     document.body.appendChild(overlay);
+    if (USE_NEW_CITY_MAP) {
+        // Новая карта (js/screens/cityMap.js). Попапы профиля и общаги — общие.
+        const { renderNewCityMap } = await import("./cityMap.js");
+        await renderNewCityMap(overlay, { showPublicProfile, showDormPeople });
+        return;
+    }
     await renderCityMap(overlay);
 }
 

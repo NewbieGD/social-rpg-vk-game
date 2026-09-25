@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { playFailSound, playCoinSound, burstConfetti } from "../fx.js";
 import { renderRecruitmentScreen } from "./recruitment.js";
 import { renderHeistScreen } from "./heist.js";
@@ -19,7 +20,7 @@ export async function renderCrimeScreen(root) {
 
     if (profile.stage === "prison") {
         root.innerHTML = `
-            <div class="title">🚨 Криминал</div>
+            ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
             <div class="card"><div class="subtitle">⛓ Ты в тюрьме — сначала нужно освободиться.</div></div>
         `;
         return;
@@ -27,14 +28,14 @@ export async function renderCrimeScreen(root) {
 
     if (profile.stage !== "criminal") {
         root.innerHTML = `
-            <div class="title">🚨 Криминал</div>
+            ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
             <div class="card"><div class="subtitle">Этот раздел доступен только преступникам.</div></div>
         `;
         return;
     }
 
     root.innerHTML = `
-        <div class="title">🚨 Криминал</div>
+        ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
         <div class="card">
             <div class="profile-row">🔫 Авторитет: ${Number(profile.authority).toFixed(2)}/100</div>
         </div>

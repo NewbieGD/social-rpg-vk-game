@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { renderHeistScreen } from "./heist.js";
 
 const REQUEST_BUTTONS = [
@@ -19,9 +20,10 @@ function formatCooldown(seconds) {
 }
 
 export async function renderDutyScreen(root) {
+    const sceneHeader = screenHeader({ scene: "floodlights", title: "Помощь", sub: "Экстренные службы города", fallbackTitle: "Помощь" });
+    const dutyHeader = sceneHeader.includes("street-hero") ? sceneHeader : `<div class="duty-banner">🚨 ЭКСТРЕННАЯ ПОМОЩЬ</div>${sceneHeader}`;
     root.innerHTML = `
-        <div class="duty-banner">🚨 ЭКСТРЕННАЯ ПОМОЩЬ</div>
-        <div class="title">Помощь</div>
+        ${dutyHeader}
         <div class="card">
             <div class="subtitle">Нажми, если ситуация подходит — заявка уйдёт случайному свободному специалисту. Если не подходит, backend просто объяснит, почему нельзя.</div>
             <div id="request-buttons"></div>

@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { burstConfetti, playSuccessSound, playFailSound, shakeElement } from "../fx.js";
 
 export async function renderLicenseScreen(root) {
@@ -14,7 +15,7 @@ export async function renderLicenseScreen(root) {
 
     if (status.has_license) {
         root.innerHTML = `
-            <div class="title">🪪 Права (ВУ)</div>
+            ${screenHeader({ scene: "commute", title: "Права", sub: "Водительское удостоверение", fallbackTitle: "🪪 Права (ВУ)" })}
             <div class="card">
                 <div class="profile-row" style="color:#7ee787">✅ У тебя есть права — можно покупать Машину в магазине.</div>
             </div>
@@ -24,7 +25,7 @@ export async function renderLicenseScreen(root) {
 
     if (status.exam_passed) {
         root.innerHTML = `
-            <div class="title">🪪 Права (ВУ)</div>
+            ${screenHeader({ scene: "commute", title: "Права", sub: "Водительское удостоверение", fallbackTitle: "🪪 Права (ВУ)" })}
             <div class="card">
                 <div class="profile-row" style="color:#7ee787">✅ Экзамен сдан на отлично!</div>
                 <div class="subtitle">Осталось купить сами права в 🛍 Магазине.</div>
@@ -35,7 +36,7 @@ export async function renderLicenseScreen(root) {
 
     if (!status.can_retry) {
         root.innerHTML = `
-            <div class="title">🪪 Права (ВУ)</div>
+            ${screenHeader({ scene: "commute", title: "Права", sub: "Водительское удостоверение", fallbackTitle: "🪪 Права (ВУ)" })}
             <div class="card">
                 <div class="profile-row">❌ Экзамен не сдан.</div>
                 <div class="subtitle">Пересдача будет доступна через ${formatDuration(status.seconds_left)}.</div>
@@ -45,7 +46,7 @@ export async function renderLicenseScreen(root) {
     }
 
     root.innerHTML = `
-        <div class="title">🪪 Права (ВУ)</div>
+        ${screenHeader({ scene: "commute", title: "Права", sub: "Водительское удостоверение", fallbackTitle: "🪪 Права (ВУ)" })}
         <div class="card">
             <div class="subtitle">5 вопросов по ПДД РФ. Чтобы сдать — нужно ответить правильно на все 5. Если хоть один неверный — пересдача через сутки.</div>
             <button class="btn" id="start-btn">🚗 Начать экзамен</button>

@@ -1,15 +1,16 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { renderOtherProfile } from "./profile.js";
 import { showGamePopupWithContent } from "../gamePopup.js";
 
 export async function renderRecruitmentScreen(root) {
-    root.innerHTML = `<div class="title">👥 Вербовка</div><div class="loading">Загружаем список…</div>`;
+    root.innerHTML = `${screenHeader({ scene: "blackmarket", title: "Вербовка", sub: "Найди новых воров", fallbackTitle: "👥 Вербовка" })}<div class="loading">Загружаем список…</div>`;
 
     let data;
     try {
         data = await apiFetch("/api/recruitment/candidates");
     } catch (e) {
-        root.innerHTML = `<div class="title">👥 Вербовка</div><div class="error">${e.message}</div>`;
+        root.innerHTML = `${screenHeader({ scene: "blackmarket", title: "Вербовка", sub: "Найди новых воров", fallbackTitle: "👥 Вербовка" })}<div class="error">${e.message}</div>`;
         return;
     }
 
@@ -21,7 +22,7 @@ export async function renderRecruitmentScreen(root) {
     `).join("");
 
     root.innerHTML = `
-        <div class="title">👥 Вербовка</div>
+        ${screenHeader({ scene: "blackmarket", title: "Вербовка", sub: "Найди новых воров", fallbackTitle: "👥 Вербовка" })}
         <div class="card">
             <div class="subtitle">Список из 20 случайных честных граждан — обновляется раз в сутки.${data.has_detailed_list ? "" : " Купи «Список вербовки» на чёрном рынке, чтобы видеть профессии и переходить в профиль."}</div>
             <div id="candidate-list">${rows}</div>

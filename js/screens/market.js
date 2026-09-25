@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { renderOtherProfile } from "./profile.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 
@@ -13,7 +14,7 @@ function showMarketProfileOverlay(vkId) {
 export async function renderMarketScreen(root) {
     root.innerHTML = `
         <div class="market-stall-sign">🏪 РЫНОК</div>
-        <div class="title">Торговая площадь</div>
+        ${screenHeader({ scene: "market", title: "Рынок", sub: "Торговля между игроками", fallbackTitle: "Торговая площадь" })}
         <div class="market-section-card">
             <div class="subtitle">Нужна купленная Лицензия «Продавец». 1) жмёшь «Заказать товар»; 2) кто-то видит заявку и жмёт «Продать»; 3) тебе приходит уведомление, вещь уже у тебя. Купить — на 10% дешевле обычной цены; продать — 75% от цены (разница уходит в казну).</div>
             <button class="btn" id="request-btn">🛒 Заказать товар</button>

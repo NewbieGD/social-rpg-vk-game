@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderPrisonScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -12,7 +13,7 @@ export async function renderPrisonScreen(root) {
     }
 
     if (!profile.prison_until) {
-        root.innerHTML = `<div class="title">🔒 Тюрьма</div><div class="card"><div class="subtitle">Ты не в заключении.</div></div>`;
+        root.innerHTML = `${screenHeader({ scene: "police", title: "Тюрьма", sub: "Под присмотром полиции", fallbackTitle: "🔒 Тюрьма" })}<div class="card"><div class="subtitle">Ты не в заключении.</div></div>`;
         return;
     }
 
@@ -20,7 +21,7 @@ export async function renderPrisonScreen(root) {
     const secondsLeft = Math.max(0, Math.round((releaseDate - new Date()) / 1000));
 
     root.innerHTML = `
-        <div class="title">🔒 Тюрьма</div>
+        ${screenHeader({ scene: "police", title: "Тюрьма", sub: "Под присмотром полиции", fallbackTitle: "🔒 Тюрьма" })}
         <div class="card">
             <div class="subtitle">Тебя поймали — сейчас ты отбываешь срок.</div>
             <div class="profile-row">⏳ Освобождение через: ${formatDuration(secondsLeft)}</div>

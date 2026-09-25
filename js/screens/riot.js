@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 
 export async function renderRiotScreen(root) {
     root.innerHTML = `<div class="loading">Загружаем…</div>`;
@@ -33,7 +34,7 @@ function renderLiveRiot(root, s) {
 
     root.innerHTML = `
         <div class="riot-active-banner">🔥 БУНТ ИДЁТ ПРЯМО СЕЙЧАС</div>
-        <div class="title">Бунт</div>
+        ${screenHeader({ scene: "alley", title: "Бунт", sub: "Голос улицы", fallbackTitle: "Бунт" })}
         <div class="card">
             <div class="subtitle">📊 Текущая статистика</div>
             <div class="profile-row">🕐 Начался: ${startTime}</div>
@@ -59,7 +60,7 @@ function renderPetition(root, status) {
     const progressPct = status.population > 0 ? Math.min(100, Math.round((status.yes_votes / needed) * 100)) : 0;
 
     root.innerHTML = `
-        <div class="title">🔥 Бунт</div>
+        ${screenHeader({ scene: "alley", title: "Бунт", sub: "Голос улицы", fallbackTitle: "🔥 Бунт" })}
         <div class="card">
             <div class="subtitle">📜 Хроника действий президента</div>
             <div id="track-record"></div>

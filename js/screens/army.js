@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { burstConfetti, playSuccessSound } from "../fx.js";
 
 export async function renderArmyScreen(root) {
@@ -14,7 +15,7 @@ export async function renderArmyScreen(root) {
 
     if (status.active) {
         root.innerHTML = `
-            <div class="title">🎖 Армия</div>
+            ${screenHeader({ scene: "army", title: "Армия", sub: "Военкомат", fallbackTitle: "🎖 Армия" })}
             <div class="card">
                 <div class="profile-row" style="color:#7ee787">✅ Контракт действует</div>
                 <div class="profile-row">💰 ${status.base_rate.toFixed(0)}₭/час</div>
@@ -31,7 +32,7 @@ export async function renderArmyScreen(root) {
     }
 
     root.innerHTML = `
-        <div class="title">🎖 Армия</div>
+        ${screenHeader({ scene: "army", title: "Армия", sub: "Военкомат", fallbackTitle: "🎖 Армия" })}
         <div class="card" id="army-card">
             <div class="subtitle">Контрактная служба — не профессия, отдельное соглашение на 30 дней.</div>
             <div class="profile-row">💰 ${status.base_rate.toFixed(0)}₭/час — фиксированная ставка (может менять президент)</div>

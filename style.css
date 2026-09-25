@@ -3023,3 +3023,19 @@ body.theme-street .card.card-frame-aurora {
     border-radius: 6px;
     display: inline-block;
 }
+
+/* ---------- Новая карта города (js/screens/cityMap.js) ---------- */
+
+.city-map-svg {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.city-obj,
+.city-vehicle {
+    cursor: pointer;
+}
+
+.city-obj:hover {
+    filter: brightness(1.15);
+}

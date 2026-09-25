@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { burstConfetti, playSuccessSound, shakeElement } from "../fx.js";
 import { showGameStylePopup } from "../gamePopup.js";
 import { startAutoRefresh } from "../autoRefresh.js";
@@ -23,6 +24,12 @@ export async function renderStateScreen(root) {
     const isVor = profile.is_vor;
 
     const parts = [];
+    parts.push(screenHeader({
+        scene: "government",
+        title: "Государство",
+        sub: escapeHtmlState(state.country_name || ""),
+        fallbackTitle: "🏛 Государство",
+    }));
     parts.push(renderCountryCard(state));
     parts.push(`<div class="card" id="role-call-card"></div>`);
     parts.push(`
@@ -41,7 +48,7 @@ export async function renderStateScreen(root) {
     parts.push(`<button class="btn btn-secondary" id="history-toggle-btn" style="margin-bottom:10px">📜 История правления</button><div id="history-section"></div>`);
     parts.push(`<div id="state-result"></div>`);
 
-    root.innerHTML = `<div class="title gov-page-title">🏛 Государство</div>${parts.join("")}`;
+    root.innerHTML = parts.join("");
 
     root.querySelector("#stats-btn").onclick = () => loadCountryStats(root);
     root.querySelector("#history-toggle-btn").onclick = () => toggleHistorySection(root);

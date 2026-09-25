@@ -1,9 +1,10 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { renderOtherProfile } from "./profile.js";
 
 export async function renderLeaderboardScreen(root) {
     root.innerHTML = `
-        <div class="title">🏆 Лидеры</div>
+        ${screenHeader({ scene: "street", title: "Лидеры", sub: "Лучшие игроки страны", fallbackTitle: "🏆 Лидеры" })}
         <div class="tab-row">
             <button class="tab-btn active" id="tab-rating">⭐ По рейтингу</button>
             <button class="tab-btn" id="tab-duels">⚔️ По дуэлям</button>

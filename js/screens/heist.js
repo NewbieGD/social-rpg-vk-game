@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { playSuccessSound, playFailSound, burstConfetti } from "../fx.js";
 
 const TARGET_LIFETIME_MS = 1200;
@@ -6,18 +7,18 @@ const SUBMIT_INTERVAL_MS = 5000;
 const SPAWN_INTERVAL_MS = 900;
 
 export async function renderHeistScreen(root) {
-    root.innerHTML = `<div class="title">💰 Ограбление по крупному</div><div class="loading">Загружаем…</div>`;
+    root.innerHTML = `${screenHeader({ scene: "crime", title: "Ограбление по крупному", fallbackTitle: "💰 Ограбление по крупному" })}<div class="loading">Загружаем…</div>`;
 
     let status;
     try {
         status = await apiFetch("/api/heist/status");
     } catch (e) {
-        root.innerHTML = `<div class="title">💰 Ограбление по крупному</div><div class="error">${e.message}</div>`;
+        root.innerHTML = `${screenHeader({ scene: "crime", title: "Ограбление по крупному", fallbackTitle: "💰 Ограбление по крупному" })}<div class="error">${e.message}</div>`;
         return;
     }
 
     if (!status.active) {
-        root.innerHTML = `<div class="title">💰 Ограбление по крупному</div><div class="card"><div class="subtitle">Сейчас событие не идёт.</div></div>`;
+        root.innerHTML = `${screenHeader({ scene: "crime", title: "Ограбление по крупному", fallbackTitle: "💰 Ограбление по крупному" })}<div class="card"><div class="subtitle">Сейчас событие не идёт.</div></div>`;
         return;
     }
 
@@ -28,7 +29,7 @@ export async function renderHeistScreen(root) {
     if (status.phase === "prep") {
         const msLeft = new Date(status.minigame_starts_at).getTime() - Date.now();
         root.innerHTML = `
-            <div class="title">${title}</div>
+            ${screenHeader({ scene: isThief ? "crime" : "floodlights", title: title.replace(/^\S+\s+/, ""), fallbackTitle: title })}
             <div class="card">
                 <div class="subtitle">${isThief ? "🕶 Зовите своих воров — готовьтесь к дерзкому налёту!" : isPolice ? "🚨 Воры готовят налёт на банк — соберите силы, чтобы его отбить!" : "Событие скоро начнётся."}</div>
                 <div class="heist-prep-clock" id="prep-clock">${Math.max(0, Math.ceil(msLeft / 1000))}с</div>
@@ -51,7 +52,7 @@ export async function renderHeistScreen(root) {
     if (status.phase === "resolved" || status.phase === "ending") {
         const thiefWon = status.thief_score > status.police_score;
         root.innerHTML = `
-            <div class="title">${title}</div>
+            ${screenHeader({ scene: isThief ? "crime" : "floodlights", title: title.replace(/^\S+\s+/, ""), fallbackTitle: title })}
             <div class="card">
                 <div class="subtitle">🏁 Событие завершено!</div>
                 <div class="heist-vs-bar">
@@ -65,7 +66,7 @@ export async function renderHeistScreen(root) {
     }
 
     if (!isThief && !isPolice) {
-        root.innerHTML = `<div class="title">${title}</div><div class="card"><div class="subtitle">Это событие доступно только ворам и полиции.</div></div>`;
+        root.innerHTML = `${screenHeader({ scene: isThief ? "crime" : "floodlights", title: title.replace(/^\S+\s+/, ""), fallbackTitle: title })}<div class="card"><div class="subtitle">Это событие доступно только ворам и полиции.</div></div>`;
         return;
     }
 
@@ -81,7 +82,7 @@ function startMinigame(root, status, isThief) {
         : "Бей по рукам воров, пытающихся схватить деньги!";
 
     root.innerHTML = `
-        <div class="title">${title}</div>
+        ${screenHeader({ scene: isThief ? "crime" : "floodlights", title: title.replace(/^\S+\s+/, ""), fallbackTitle: title })}
         <div class="card">
             <div class="subtitle">${instructions}</div>
             <div class="heist-hud-bar">

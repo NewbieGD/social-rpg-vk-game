@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { burstConfetti } from "../fx.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 import { PROFESSION_INFO } from "../professionInfo.js";
@@ -20,7 +21,19 @@ export async function renderWorkScreen(root) {
     const bannerText = isStudent ? "🎓 УЧЕБНОЕ МЕСТО" : "💼 РАБОЧЕЕ МЕСТО";
     const titleText = isStudent ? "Учёба" : "Работа";
 
-    root.innerHTML = `<div class="work-banner">${bannerText}</div><div class="title">${titleText}</div><div id="work-body"></div>`;
+    // Кадр улицы по профессии: полиция — участок, такси/курьер — дорога со
+    // скутером, студент — дома с окнами. Остальные — общая улица.
+    const workScene = isStudent ? "school"
+        : profile.profession === "police" ? "police"
+        : (profile.profession === "taxi" || profile.profession === "courier") ? "commute"
+        : "street";
+    const header = screenHeader({
+        scene: workScene,
+        title: titleText,
+        sub: profile.profession_name || "",
+        fallbackTitle: titleText,
+    });
+    root.innerHTML = `${header.includes("street-hero") ? "" : `<div class="work-banner">${bannerText}</div>`}${header}<div id="work-body"></div>`;
     const body = root.querySelector("#work-body");
 
     if (profile.stage === "criminal") {

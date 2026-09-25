@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { playMessageSound, playSuccessSound, playFailSound, burstConfetti } from "../fx.js";
 import { renderOtherProfile } from "./profile.js";
 import { showGameStylePopup } from "../gamePopup.js";
@@ -58,7 +59,7 @@ export async function renderChatsScreen(root) {
         return;
     }
 
-    root.innerHTML = `<div class="title">💬 Чаты</div><div id="peoples-rep-card"></div><div id="chat-list"></div>`;
+    root.innerHTML = `${screenHeader({ scene: "chat", title: "Чаты", sub: "Общение жителей города", fallbackTitle: "💬 Чаты" })}<div id="peoples-rep-card"></div><div id="chat-list"></div>`;
     await renderPeoplesRepCard(root);
     const list = root.querySelector("#chat-list");
     chats.available.forEach((c) => {

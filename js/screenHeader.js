@@ -17,6 +17,15 @@ export const SCENES = {
     police: { x: 70, y: 22, zoom: 240 },
     crime: { x: 70, y: 38, zoom: 280 },
     duels: { x: 45, y: 68, zoom: 380 },
+    government: { x: 45, y: 4, zoom: 125 },
+    commute: { x: 64, y: 84, zoom: 260 },
+    school: { x: 30, y: 20, zoom: 230 },
+    office: { x: 4, y: 38, zoom: 230 },
+    alley: { x: 0, y: 92, zoom: 360 },
+    home: { x: 100, y: 8, zoom: 440 },
+    neon: { x: 21, y: 40, zoom: 440 },
+    floodlights: { x: 66, y: 4, zoom: 330 },
+    backyard: { x: 59, y: 58, zoom: 420 },
 };
 
 export function screenHeader({ scene, title, sub = "", fallbackTitle }) {

@@ -1,11 +1,12 @@
 import { apiFetch } from "../api.js";
+import { screenHeader } from "../screenHeader.js";
 import { burstConfetti, playSuccessSound, playFailSound, shakeElement } from "../fx.js";
 import { renderOtherProfile } from "./profile.js";
 import { startAutoRefresh } from "../autoRefresh.js";
 
 export async function renderDuelsScreen(root) {
     root.innerHTML = `
-        <div class="title">⚔️ Дуэли</div>
+        ${screenHeader({ scene: "duels", title: "Дуэли", sub: "Вызови соперника на поединок", fallbackTitle: "⚔️ Дуэли" })}
         <div class="card duel-challenge-card">
             <div class="duel-challenge-icon">⚔️</div>
             <div class="subtitle">Соперника выбирает система случайно — из твоей же категории (граждане/преступники/чиновники). С одним и тем же игроком — не больше 1 дуэли в день, а если он раз отклонил вызов, повторно вызвать его нельзя.</div>
