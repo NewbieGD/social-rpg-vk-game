@@ -17,8 +17,8 @@ const CHAT_THEME = {
 let pollTimer = null;
 let thiefCheckTimer = null;
 let cafe = null;
-// Чаты с кафе-сценой над сообщениями. Остальные чаты получат свои интерьеры позже.
-const CAFE_CHATS = new Set(["general"]);
+// Чаты со сценой над сообщениями: кафе (общий), бар (воровской), зал заседаний (правительственный).
+const CAFE_CHATS = new Set(["general", "thief", "gov"]);
 let isInChatRoom = false;
 
 // Вызывается извне (из shell.js) при уходе с этого экрана — без этого опрос
@@ -278,7 +278,7 @@ async function renderChatRoom(root, chatType, startAfterId = 0) {
 
     if (cafe) { cafe.stop(); cafe = null; }
     if (withCafe) {
-        cafe = createCafe(root.querySelector("#cafe-container"), { onPersonClick: showProfileOverlay });
+        cafe = createCafe(root.querySelector("#cafe-container"), { onPersonClick: showProfileOverlay, chatType });
     }
     // облачка показываем только для НОВЫХ сообщений, а не для истории при входе
     let historyLoaded = false;

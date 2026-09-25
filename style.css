@@ -3422,3 +3422,164 @@ body.theme-street .card.card-frame-aurora {
     cursor: pointer;
     text-decoration: underline;
 }
+
+/* ---------- Бар «Подворотня» (воровской чат) ---------- */
+
+.cafe-wall-brick {
+    background:
+        repeating-linear-gradient(0deg, #1a1010 0 2px, transparent 2px 16px),
+        repeating-linear-gradient(90deg, #3a2222 0 30px, #331d1d 30px 32px);
+}
+
+.cafe-wall-brick::after,
+.cafe-wall-panel::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 112px;
+    bottom: 0;
+}
+
+.cafe-wall-brick::after {
+    background: #1f1515;
+}
+
+.cafe-theme-thief .cafe-sign {
+    color: #ff8a95;
+    background: #1a0f12;
+    border-color: #ff4d5e;
+    animation: cafe-neon 5s linear infinite;
+}
+
+@keyframes cafe-neon {
+    0%, 17%, 21%, 58%, 62%, 100% { text-shadow: 0 0 8px #ff4d5e; box-shadow: 0 0 10px rgba(255, 77, 94, 0.55); opacity: 1; }
+    19%, 60% { text-shadow: none; box-shadow: none; opacity: 0.55; }
+}
+
+.cafe-window-alley {
+    background: url("assets/backgrounds/game-bg.jpg") 0% 92% / 360% auto no-repeat, #16131f;
+    border-color: #2a2a30;
+}
+
+.cafe-window-alley::before,
+.cafe-window-alley::after {
+    display: none;
+}
+
+.cafe-bars {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 13px, #2a2a30 13px 17px);
+}
+
+.cafe-lamp {
+    position: absolute;
+    top: 0;
+    right: 62px;
+    width: 2px;
+    height: 34px;
+    background: #55556a;
+    transform-origin: 50% 0;
+    animation: cafe-lamp-swing 4s ease-in-out infinite;
+}
+
+.cafe-lamp span {
+    position: absolute;
+    bottom: -8px;
+    left: -7px;
+    width: 16px;
+    height: 10px;
+    border-radius: 8px 8px 2px 2px;
+    background: #ffd08a;
+    box-shadow: 0 6px 18px 6px rgba(255, 190, 110, 0.35);
+}
+
+@keyframes cafe-lamp-swing {
+    0%, 100% { transform: rotate(6deg); }
+    50% { transform: rotate(-6deg); }
+}
+
+.cafe-bar-dark span { background: #3a5a3a; }
+.cafe-bar-dark span:nth-child(2) { background: #7a2a2a; }
+.cafe-bar-dark span:nth-child(3) { background: #9a6a2a; }
+.cafe-bar-dark span:nth-child(4) { background: #3a3a5a; }
+.cafe-bar-dark span:nth-child(5) { background: #c9862a; height: 14px; }
+
+.cafe-door-metal {
+    background: #3a3a44;
+    border-color: #55556a;
+}
+
+/* ---------- Зал заседаний (правительственный чат) ---------- */
+
+.cafe-wall-panel {
+    background: repeating-linear-gradient(90deg, #4a3326 0 40px, #3e2a1f 40px 42px);
+}
+
+.cafe-wall-panel::after {
+    background: #4a1f24;
+    border-top: 3px solid #d4af37;
+}
+
+.cafe-theme-gov .cafe-sign {
+    color: #f3e2a8;
+    background: #2a2f45;
+    border-color: #d4af37;
+}
+
+.cafe-window-gov {
+    background: url("assets/backgrounds/game-bg.jpg") 45% 4% / 125% auto no-repeat, #16131f;
+    border-color: #6e4a2a;
+}
+
+.cafe-emblem {
+    position: absolute;
+    top: 46px;
+    left: 26px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #d4af37;
+    border: 3px solid #8a6a1a;
+    color: #7a1f24;
+    font-size: 22px;
+    line-height: 34px;
+    text-align: center;
+}
+
+.cafe-flag {
+    position: absolute;
+    top: 14px;
+    width: 3px;
+    height: 88px;
+    background: #b8ae9b;
+}
+
+.cafe-flag::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    width: 22px;
+    height: 15px;
+    background: var(--flag-bg, linear-gradient(#d4af37 0 50%, #7a1f24 50% 100%));
+    transform-origin: 0 50%;
+    animation: cafe-flag-wave 2.4s ease-in-out infinite;
+}
+
+.cafe-flag-right { right: 27%; }
+
+@keyframes cafe-flag-wave {
+    0%, 100% { transform: skewY(0deg) scaleX(1); }
+    50% { transform: skewY(-6deg) scaleX(0.9); }
+}
+
+.cafe-door-oak {
+    background: #6e4a2a;
+    border-color: #8a5a3a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cafe-theme-thief .cafe-sign, .cafe-lamp, .cafe-flag::after { animation: none; }
+}
