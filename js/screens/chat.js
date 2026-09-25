@@ -4,6 +4,7 @@ import { playMessageSound, playSuccessSound, playFailSound, burstConfetti } from
 import { renderOtherProfile } from "./profile.js";
 import { showGameStylePopup } from "../gamePopup.js";
 import { startAutoRefresh } from "../autoRefresh.js";
+import { createCafe } from "./chatCafe.js";
 
 const POLL_INTERVAL_MS = 3000;
 const THIEF_CHECK_INTERVAL_MS = 10000;
@@ -15,6 +16,9 @@ const CHAT_THEME = {
 };
 let pollTimer = null;
 let thiefCheckTimer = null;
+let cafe = null;
+// Чаты с кафе-сценой над сообщениями. Остальные чаты получат свои интерьеры позже.
+const CAFE_CHATS = new Set(["general"]);
 let isInChatRoom = false;
 
 // Вызывается извне (из shell.js) при уходе с этого экрана — без этого опрос
@@ -27,6 +31,10 @@ export function stopChatPolling() {
     if (thiefCheckTimer) {
         clearInterval(thiefCheckTimer);
         thiefCheckTimer = null;
+    }
+    if (cafe) {
+        cafe.stop();
+        cafe = null;
     }
 }
 
@@ -238,9 +246,12 @@ async function enterChat(root, chatType) {
 async function renderChatRoom(root, chatType, startAfterId = 0) {
     isInChatRoom = true;
     const theme = CHAT_THEME[chatType] || CHAT_THEME.general;
+    const withCafe = CAFE_CHATS.has(chatType);
     root.innerHTML = `
-        <div class="chat-room-banner chat-room-banner-${chatType}">${theme.banner}</div>
-        <div class="title">${theme.title}</div>
+        ${withCafe
+            ? `<div id="cafe-container"></div>`
+            : `<div class="chat-room-banner chat-room-banner-${chatType}">${theme.banner}</div>
+        <div class="title">${theme.title}</div>`}
         <div id="who-panel"></div>
         <div id="messages" class="chat-messages chat-messages-${chatType}"></div>
         <div class="chat-input-row">
@@ -265,13 +276,24 @@ async function renderChatRoom(root, chatType, startAfterId = 0) {
     let lastId = startAfterId;
     const messagesEl = root.querySelector("#messages");
 
+    if (cafe) { cafe.stop(); cafe = null; }
+    if (withCafe) {
+        cafe = createCafe(root.querySelector("#cafe-container"), { onPersonClick: showProfileOverlay });
+    }
+    // облачка показываем только для НОВЫХ сообщений, а не для истории при входе
+    let historyLoaded = false;
+
     async function poll() {
         try {
             const newMessages = await apiFetch(`/api/chats/${chatType}/messages?after_id=${lastId}`);
             newMessages.forEach((m) => {
                 lastId = m.id;
                 appendMessage(messagesEl, m, myVkId);
+                if (cafe && historyLoaded && !m.is_system && m.sender_vk_id && !m.identity_hidden) {
+                    cafe.showBubble(m.sender_vk_id, m.text);
+                }
             });
+            historyLoaded = true;
         } catch (e) {
             root.querySelector("#chat-error").innerHTML = `<div class="error">${e.message}</div>`;
             stopChatPolling();

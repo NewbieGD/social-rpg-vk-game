@@ -3039,3 +3039,386 @@ body.theme-street .card.card-frame-aurora {
 .city-obj:hover {
     filter: brightness(1.15);
 }
+
+/* ---------- Кафе в общем чате (js/screens/chatCafe.js) ---------- */
+
+.cafe-scene {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #332f45;
+    background: #2a1d1f center / cover no-repeat;
+    padding: 118px 6px 10px;
+}
+
+.cafe-wall {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(#3a2426 0 112px, #4a2f24 112px 100%);
+}
+
+.cafe-window {
+    position: absolute;
+    top: 12px;
+    left: 30%;
+    width: 40%;
+    height: 88px;
+    border: 4px solid #5a3a2a;
+    border-radius: 6px;
+    background: url("assets/backgrounds/game-bg.jpg") 60% 40% / 220% auto no-repeat, #1d1a2b;
+}
+
+.cafe-window::before,
+.cafe-window::after {
+    content: "";
+    position: absolute;
+    background: #5a3a2a;
+}
+
+.cafe-window::before {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    transform: translateX(-50%);
+}
+
+.cafe-window::after {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 3px;
+    transform: translateY(-50%);
+}
+
+.cafe-sign {
+    position: absolute;
+    top: 12px;
+    left: 10px;
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 13px;
+    color: #ffe3bd;
+    background: #3a2426;
+    border: 1.5px solid #f2a24a;
+    border-radius: 4px;
+    padding: 3px 8px;
+}
+
+.cafe-bar {
+    position: absolute;
+    top: 46px;
+    left: 14px;
+    display: flex;
+    gap: 5px;
+    align-items: flex-end;
+    padding-bottom: 3px;
+    border-bottom: 3px solid #5a3a2a;
+}
+
+.cafe-bar span {
+    width: 7px;
+    height: 18px;
+    border-radius: 2px 2px 1px 1px;
+    background: #5a8a5a;
+}
+
+.cafe-bar span:nth-child(2) { background: #b8574a; height: 22px; }
+.cafe-bar span:nth-child(3) { background: #c98a3a; height: 16px; }
+.cafe-bar span:nth-child(4) { background: #4a6fa0; height: 20px; }
+
+.cafe-door {
+    position: absolute;
+    top: 18px;
+    right: 12px;
+    width: 34px;
+    height: 80px;
+    background: #5a3a2a;
+    border-radius: 4px 4px 0 0;
+    border: 2px solid #6e4a3a;
+}
+
+.cafe-bell {
+    position: absolute;
+    top: -4px;
+    left: -16px;
+    font-size: 14px;
+    display: inline-block;
+    transform-origin: 50% 0;
+}
+
+.cafe-bell-ring {
+    animation: cafe-bell-ring 0.9s ease;
+}
+
+@keyframes cafe-bell-ring {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-25deg); }
+    40% { transform: rotate(20deg); }
+    60% { transform: rotate(-12deg); }
+    80% { transform: rotate(6deg); }
+}
+
+.cafe-tables {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px 4px;
+}
+
+.cafe-seat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+    padding-top: 30px;
+    cursor: pointer;
+    --bx: -50%;
+}
+
+.cafe-seat:nth-child(5n + 1) { --bx: -12%; }
+.cafe-seat:nth-child(5n) { --bx: -88%; }
+
+.cafe-seat-empty {
+    opacity: 0.4;
+    cursor: default;
+    justify-content: flex-end;
+}
+
+.cafe-seat-enter {
+    animation: cafe-seat-enter 0.9s ease-out;
+}
+
+@keyframes cafe-seat-enter {
+    from { opacity: 0; transform: translateX(46px); }
+    to { opacity: 1; transform: none; }
+}
+
+.cafe-avatar {
+    position: relative;
+    z-index: 2;
+    margin-bottom: -2px;
+}
+
+.cafe-avatar .profile-avatar,
+.cafe-silhouette {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+}
+
+.cafe-silhouette {
+    border-radius: 50%;
+    background: #16131f;
+    border: 1px solid #47465c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cafe-person {
+    width: 50px;
+    line-height: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.cafe-person-svg,
+.cafe-img-character {
+    width: 100%;
+    height: auto;
+    animation: cafe-sip 7s ease-in-out infinite;
+    transform-origin: 50% 100%;
+}
+
+@keyframes cafe-sip {
+    0%, 86%, 100% { transform: none; }
+    90% { transform: translateY(-1.5px) rotate(-2deg); }
+}
+
+.cafe-table {
+    position: relative;
+    z-index: 2;
+    width: 58px;
+    margin-top: -10px;
+    line-height: 0;
+}
+
+.cafe-table-svg,
+.cafe-img-table {
+    width: 100%;
+    height: auto;
+}
+
+/* чашка на правом краю стола, чтобы не закрывать посетителя */
+.cafe-cup,
+.cafe-img-cup {
+    position: absolute;
+    left: 80%;
+    top: -13px;
+    width: 20px;
+    transform: translateX(-50%);
+}
+
+.cafe-cup-svg {
+    width: 100%;
+    height: auto;
+}
+
+.cafe-steam {
+    position: absolute;
+    bottom: 16px;
+    left: 7px;
+    width: 3px;
+    height: 10px;
+    border-radius: 2px;
+    background: rgba(239, 230, 216, 0.55);
+    animation: cafe-steam 2.4s ease-in-out infinite;
+}
+
+.cafe-steam-2 {
+    left: 12px;
+    animation-delay: 1.2s;
+}
+
+@keyframes cafe-steam {
+    0% { transform: translateY(4px) scaleY(0.6); opacity: 0; }
+    40% { opacity: 0.75; }
+    100% { transform: translateY(-11px) scaleY(1.2); opacity: 0; }
+}
+
+.cafe-name {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #efe6d8;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cafe-seat-me .cafe-name {
+    color: #f2a24a;
+}
+
+.cafe-badge {
+    font-size: 10px;
+    color: #f2a24a;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cafe-bubble {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 4;
+    width: max-content;
+    max-width: 130px;
+    padding: 5px 8px;
+    border-radius: 10px;
+    background: #efe6d8;
+    color: #1d1a2b;
+    font-size: 11px;
+    line-height: 1.25;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(var(--bx), 0) scale(0.6);
+}
+
+.cafe-bubble::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: calc(-1 * var(--bx));
+    border: 5px solid transparent;
+    border-top-color: #efe6d8;
+    border-bottom: 0;
+    transform: translateX(-50%);
+}
+
+.cafe-bubble-show {
+    animation: cafe-bubble-pop 4.5s ease forwards;
+}
+
+@keyframes cafe-bubble-pop {
+    0% { opacity: 0; transform: translate(var(--bx), 0) scale(0.6); }
+    7% { opacity: 1; transform: translate(var(--bx), -8px) scale(1.06); }
+    12% { transform: translate(var(--bx), -8px) scale(1); }
+    85% { opacity: 1; transform: translate(var(--bx), -8px) scale(1); }
+    100% { opacity: 0; transform: translate(var(--bx), -12px) scale(1); }
+}
+
+.cafe-counter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 2px 12px;
+    font-size: 13px;
+    color: #b9b3c9;
+}
+
+.cafe-counter-person {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.cafe-counter-person .profile-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+}
+
+.cafe-counter-more {
+    color: #f2a24a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cafe-steam, .cafe-person-svg, .cafe-img-character { animation: none; }
+}
+
+/* Сводка по зданию на карте */
+.building-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.building-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.building-stat-row b {
+    color: #f2a24a;
+    white-space: nowrap;
+}
+
+.building-stat-title {
+    margin-top: 8px;
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 14px;
+    color: #ffe3bd;
+}
+
+.building-person {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #8fd3ff;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}

@@ -428,7 +428,7 @@ export async function renderNewCityMap(overlay, helpers) {
         const o = objects[Number(g.dataset.obj)];
         g.addEventListener("click", () => {
             if (o.kind === "building" && o.b.code === "private_gate") renderPrivateSector(overlay, helpers);
-            else if (o.kind === "building") showBuildingInfo(o.b);
+            else if (o.kind === "building") showBuildingInfo(o.b, helpers, overlay);
             else if (o.kind === "dorm") helpers.showDormPeople(overlay, o.dorm);
             else if (o.kind === "person") helpers.showPublicProfile(overlay, o.person.vk_id);
         });
@@ -548,10 +548,66 @@ function showMovementInfo(mv, helpers, overlay) {
     });
 }
 
-function showBuildingInfo(b) {
-    showGamePopupWithContent(b.title, (content) => {
-        content.innerHTML = `<div class="profile-dim">${escapeHtml(b.info)}</div>`;
+function showBuildingInfo(b, helpers, overlay) {
+    showGamePopupWithContent(b.title, async (content) => {
+        content.innerHTML = `<div class="profile-dim" style="margin-bottom:10px">${escapeHtml(b.info)}</div><div class="loading">Загружаем сводку…</div>`;
+        let st;
+        try {
+            st = await apiFetch(`/api/map/building/${b.code}`);
+        } catch (e) {
+            content.querySelector(".loading").outerHTML = `<div class="error">${escapeHtml(e.message)}</div>`;
+            return;
+        }
+        content.querySelector(".loading").outerHTML = `<div class="building-stats">${buildingStatsHtml(st)}</div>`;
+        content.querySelectorAll("[data-person]").forEach((el) => {
+            el.onclick = () => helpers.showPublicProfile(overlay, Number(el.dataset.person));
+        });
     });
+}
+
+const money = (n) => `${Number(n || 0).toFixed(2)} ₭`;
+const person = (p) => p ? `<button class="building-person" data-person="${p.vk_id}">${escapeHtml(p.username ? "@" + p.username : "ID " + p.vk_id)}</button>` : "пока никто";
+const row = (icon, label, value) => `<div class="building-stat-row"><span>${icon} ${label}</span><b>${value}</b></div>`;
+
+function buildingStatsHtml(st) {
+    if (st.kind === "profession") {
+        return [
+            row("👥", `Работают (${escapeHtml(st.profession_name)})`, `${st.workers}${st.students ? ` + ${st.students} стаж.` : ""}`),
+            row("✅", "Выполнено заявок", `${st.done_total}`),
+            row("📅", "Выполнено сегодня", `${st.done_today} из ${st.requests_today}`),
+            st.code === "police" ? row("🚔", "Поймано воров", `${st.thieves_caught}`) : "",
+            row("💰", "Налоги в казну от вызовов", money(st.taxes)),
+            `<div class="building-stat-row"><span>🏅 Последним справился</span>${person(st.last_worker)}</div>`,
+        ].join("");
+    }
+    if (st.kind === "factory") {
+        const recent = st.recent.length
+            ? st.recent.map((r) => `<div class="building-stat-row"><span>📦 ${escapeHtml(r.item_name)}</span>${person(r)}</div>`).join("")
+            : `<div class="profile-dim">Пока ничего не произведено.</div>`;
+        const top = st.top.length
+            ? st.top.map((r, i) => `<div class="building-stat-row"><span>${["🥇", "🥈", "🥉", "4.", "5."][i]} ${person(r)}</span><b>${r.count} шт.</b></div>`).join("")
+            : `<div class="profile-dim">Рейтинг появится после первых смен.</div>`;
+        return row("👷", "Работают на заводе", `${st.workers}`)
+            + `<div class="building-stat-title">Последние 5 товаров</div>${recent}`
+            + `<div class="building-stat-title">Лучшие сотрудники</div>${top}`;
+    }
+    if (st.kind === "shop") {
+        return row("🛍", "Продано сегодня", `${st.sold_today}`) + row("📈", "Продано за всё время", `${st.sold_total}`);
+    }
+    if (st.kind === "army") {
+        return row("🎖", "Служат по контракту", `${st.soldiers}`);
+    }
+    if (st.kind === "government") {
+        return [
+            row("🏛", "Страна", escapeHtml(st.country_name)),
+            `<div class="building-stat-row"><span>🎖 Президент</span>${person(st.president)}</div>`,
+            row("💰", "Казна", money(st.treasury)),
+            row("📊", "Налог", `${(st.tax_rate * 100).toFixed(1)}%`),
+            row("👥", "Жителей", `${st.population}`),
+            row("🕶", "Воров", `${st.criminals}`),
+        ].join("");
+    }
+    return "";
 }
 
 // ---------- Частный сектор ----------
