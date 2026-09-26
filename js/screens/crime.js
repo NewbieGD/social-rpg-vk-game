@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { infoButton, bindInfoButtons } from "../infoPopups.js";
 import { screenHeader } from "../screenHeader.js";
 import { playFailSound, playCoinSound, burstConfetti } from "../fx.js";
 import { renderRecruitmentScreen } from "./recruitment.js";
@@ -36,9 +37,6 @@ export async function renderCrimeScreen(root) {
 
     root.innerHTML = `
         ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
-        <div class="card">
-            <div class="profile-row">🔫 Авторитет: ${Number(profile.authority).toFixed(2)}/100</div>
-        </div>
         <div class="card">
             <div class="subtitle">
                 🕵️ Карманная кража — без жертвы, до 5 раз в день без кулдауна, 1-30₭ за раз, 5% простой шанс неудачи.<br><br>
@@ -88,15 +86,25 @@ async function doCrime(root, path, kind) {
         if (result.status === "success") {
             burstConfetti(content, 20);
         }
-        if (kind === "rob" && result.status === "success" && result.identity_known) {
+        if (kind === "rob" && result.status === "success" && result.robbery_id) {
+            const stashAmount = (result.loot * 0.30).toFixed(2);
+            const bankAmount = (result.loot * 0.10).toFixed(2);
             content.insertAdjacentHTML("beforeend", `
-                <div class="profile-dim" style="margin-top:10px">Жертва тебя узнала — в течение часа можешь защитить часть добычи от возврата, если поймают:</div>
-                <button class="btn btn-secondary" id="stash-protect-btn" style="margin-top:6px">🗝 В тайник (30%)</button>
-                <button class="btn btn-secondary" id="bank-protect-btn" style="margin-top:6px">🏦 В банк воров (10%)</button>
-                <div id="protect-result"></div>
+                <div class="protect-choice">
+                    <div class="profile-dim">Что сделать с добычей? Решить можно в течение часа.${result.identity_known ? " Спрятанное и внесённое в банк жертве не вернут, даже если тебя поймают." : ""}</div>
+                    <button class="btn btn-secondary" id="stash-protect-btn" ${result.has_stash ? "" : "disabled"}>🗝 В тайник: ${stashAmount} ₭ (30%)</button>
+                    ${result.has_stash ? "" : `<div class="profile-dim protect-hint">Нужен предмет «Тайник» — купи на чёрном рынке.</div>`}
+                    <button class="btn btn-secondary" id="bank-protect-btn">🏦 В банк воров: ${bankAmount} ₭ (10%)</button>
+                    <button class="btn btn-secondary" id="skip-protect-btn">Пропустить — оставить всё на балансе</button>
+                    <div id="protect-result"></div>
+                </div>
             `);
-            content.querySelector("#stash-protect-btn").onclick = () => doProtect(content, "/api/stash/stash_case", result.victim_vk_id, "stash-protect-btn");
-            content.querySelector("#bank-protect-btn").onclick = () => doProtect(content, "/api/stash/bank_case", result.victim_vk_id, "bank-protect-btn");
+            content.querySelector("#stash-protect-btn").onclick = () => doProtect(content, "/api/stash/stash_case", result.robbery_id, "stash-protect-btn");
+            content.querySelector("#bank-protect-btn").onclick = () => doProtect(content, "/api/stash/bank_case", result.robbery_id, "bank-protect-btn");
+            content.querySelector("#skip-protect-btn").onclick = () => {
+                const overlay = content.closest(".profile-overlay");
+                if (overlay) overlay.remove();
+            };
         }
     });
 
@@ -107,12 +115,12 @@ async function doCrime(root, path, kind) {
     }
 }
 
-async function doProtect(content, path, victimVkId, btnId) {
+async function doProtect(content, path, robberyId, btnId) {
     const resultEl = content.querySelector("#protect-result");
     resultEl.innerHTML = `<div class="loading">…</div>`;
     try {
-        await apiFetch(path, { method: "POST", body: { victim_vk_id: victimVkId } });
-        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ Защищено!</div>`;
+        await apiFetch(path, { method: "POST", body: { robbery_id: robberyId } });
+        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ ${btnId === "stash-protect-btn" ? "Спрятано в тайник" : "Внесено в банк воров"}!</div>`;
         const btn = content.querySelector(`#${btnId}`);
         if (btn) btn.disabled = true;
     } catch (e) {
@@ -151,20 +159,22 @@ async function loadBossMafiaCard(root, profile) {
 
     if (state.boss_mafia) {
         card.innerHTML = `
-            <div class="subtitle">👑 Сейчас Босс Мафии: ${state.boss_mafia.vk_id === profile.tg_id ? "это ты!" : escapeHtml(state.boss_mafia.username ? "@" + state.boss_mafia.username : "ID " + state.boss_mafia.vk_id)}</div>
+            <div class="subtitle">👑 Сейчас Босс Мафии ${infoButton("boss_mafia")}: ${state.boss_mafia.vk_id === profile.tg_id ? "это ты!" : escapeHtml(state.boss_mafia.username ? "@" + state.boss_mafia.username : "ID " + state.boss_mafia.vk_id)}</div>
             ${state.boss_mafia.vk_id === profile.tg_id ? `<button class="btn btn-secondary" id="grant-permission-btn" style="margin-top:6px">Разрешить кому-то баллотироваться в депутаты</button>` : ""}
         `;
         const grantBtn = card.querySelector("#grant-permission-btn");
         if (grantBtn) grantBtn.onclick = () => showGrantPermissionPrompt();
+        bindInfoButtons(card);
         return;
     }
 
     card.innerHTML = `
-        <div class="subtitle">👑 Сейчас вакансия Босса Мафии${state.boss_mafia_election_pending ? " — идут выборы, присоединяйся!" : ""}</div>
-        <div class="profile-dim" style="margin-bottom:8px">Нужен Авторитет 100+, чтобы баллотироваться.</div>
+        <div class="subtitle">👑 Сейчас вакансия Босса Мафии ${infoButton("boss_mafia")}${state.boss_mafia_election_pending ? " — идут выборы, присоединяйся!" : ""}</div>
+        <div class="profile-dim" style="margin-bottom:8px">Главного вора страны ещё нет. Баллотироваться может вор с Авторитетом 100+ (твой: ${Number(profile.authority || 0).toFixed(0)}).</div>
         <button class="btn" id="boss-register-btn" ${profile.authority < 100 ? "disabled" : ""}>${state.boss_mafia_election_pending ? "Присоединиться к выборам" : "Баллотироваться в Боссы Мафии"}</button>
         <div id="boss-register-result"></div>
     `;
+    bindInfoButtons(card);
     const btn = card.querySelector("#boss-register-btn");
     btn.onclick = async () => {
         const resultEl = card.querySelector("#boss-register-result");
@@ -234,10 +244,11 @@ async function loadHeistScaleBar(card) {
     }
     const pct = Math.min(100, Math.round((scale.progress / scale.threshold) * 100));
     card.innerHTML = `
-        <div class="gov-section-title">💰 До «Ограбления по крупному»</div>
-        <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны</div>
+        <div class="gov-section-title">💰 До «Ограбления по крупному» ${infoButton("heist")}</div>
+        <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны. Когда шкала заполнится — начнётся налёт на банк страны.</div>
         <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     `;
+    bindInfoButtons(card);
 }
 
 async function showFullScreenFrom(root, renderFn) {

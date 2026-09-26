@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { infoButton, bindInfoButtons } from "../infoPopups.js";
 import { screenHeader } from "../screenHeader.js";
 
 export async function renderStashScreen(root) {
@@ -9,6 +10,17 @@ export async function renderStashScreen(root) {
         status = await apiFetch("/api/stash/status");
     } catch (e) {
         root.innerHTML = `${screenHeader({ scene: "backyard", title: "Тайник", sub: "Спрятанные деньги", fallbackTitle: "🗝 Тайник" })}<div class="error">${e.message}</div>`;
+        return;
+    }
+
+    if (!status.has_stash && status.total <= 0) {
+        root.innerHTML = `
+            ${screenHeader({ scene: "backyard", title: "Тайник", sub: "Спрятанные деньги", fallbackTitle: "🗝 Тайник" })}
+            <div class="card">
+                <div class="subtitle">У тебя ещё нет тайника ${infoButton("stash")}</div>
+                <div class="profile-dim">Купи предмет «Тайник» на чёрном рынке (один раз, навсегда). После этого после каждого ограбления можно будет прятать 30% добычи — её не вернут жертве, даже если тебя поймают.</div>
+            </div>`;
+        bindInfoButtons(root);
         return;
     }
 

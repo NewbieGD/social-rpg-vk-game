@@ -1,4 +1,5 @@
 import { apiFetch, clearToken } from "../api.js";
+import { infoButton, bindInfoButtons } from "../infoPopups.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
 import { USE_TOWN_MAP_HOME } from "../themeConfig.js";
@@ -109,7 +110,8 @@ export async function renderProfileScreen(root) {
     if (user.progress && user.progress.kind === "graduation") {
         const p = user.progress;
         mainLines.push(`
-            <div class="profile-row">🎓 До выпуска: осталось ~${p.hours_left} ч.</div>
+            <div class="profile-row">🎓 До выпуска: осталось ~${p.hours_left} ч. ${infoButton("graduation")}</div>
+            ${user.commute_day_is_today ? "" : `<div class="profile-dim" style="color:#ffb454">⏸ Сегодня ты не поехал(а) на учёбу — часы до выпуска стоят.</div>`}
             <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (p.hours_done / p.hours_total) * 100)}%"></div></div>
         `);
     }
@@ -231,6 +233,7 @@ export async function renderProfileScreen(root) {
     if (professionInfoBtn) {
         professionInfoBtn.onclick = () => showProfessionInfoDetails(user.profession, user.profession_name);
     }
+    bindInfoButtons(root);
     await checkRecruitmentOffer(root);
 
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK

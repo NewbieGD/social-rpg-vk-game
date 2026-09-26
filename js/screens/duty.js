@@ -39,7 +39,7 @@ export async function renderDutyScreen(root) {
         // не критично — просто не покажем кулдауны в этот раз
     }
 
-    if (profile.profession === "police" && profile.stage === "worker") {
+    if (profile.profession === "police" && (profile.stage === "worker" || profile.stage === "student")) {
         await loadHeistPoliceCard(root);
     }
 
