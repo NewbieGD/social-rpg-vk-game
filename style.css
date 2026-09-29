@@ -245,6 +245,98 @@ body {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     min-width: 0;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+/* Короткая фаза "угасания" перед сменой вкладки — см. switchTo() в shell.js */
+.screen-content-leaving {
+    opacity: 0;
+    transform: translateY(4px);
+}
+
+/* ---------- Общий мини-игровой движок (js/reactionMinigame.js) ---------- */
+
+.mini-rx-label {
+    font-size: 14px;
+    color: #d9d2c5;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.mini-rx-hud {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #9aa5b8;
+    margin-bottom: 8px;
+}
+
+.mini-rx-timer {
+    font-variant-numeric: tabular-nums;
+}
+
+.mini-rx-field {
+    position: relative;
+    height: 180px;
+    border-radius: 12px;
+    background: #171f34;
+    border: 1px solid #232d47;
+    overflow: hidden;
+}
+
+.mini-rx-target {
+    position: absolute;
+    font-size: 30px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    animation: mini-rx-pop 0.15s ease-out;
+    user-select: none;
+}
+
+.mini-rx-target-hit {
+    animation: mini-rx-hit 0.14s ease-out forwards;
+}
+
+@keyframes mini-rx-pop {
+    from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@keyframes mini-rx-hit {
+    to { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+/* ---------- Анимация "идёт на работу" (js/screens/work.js) ---------- */
+
+.work-walk-strip {
+    position: relative;
+    height: 64px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, transparent 0%, transparent 60%, #2a2540 60%, #2a2540 100%);
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.work-walk-dest {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    font-size: 26px;
+}
+
+.work-walk-figure {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    font-size: 26px;
+    animation: work-walk-move 1.1s ease-in-out forwards;
+}
+
+@keyframes work-walk-move {
+    from { left: 6px; transform: scaleX(1); }
+    to { left: calc(100% - 40px); transform: scaleX(1); }
 }
 
 .bottom-nav {

@@ -3,6 +3,30 @@ import { screenHeader } from "../screenHeader.js";
 import { burstConfetti } from "../fx.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 import { PROFESSION_INFO } from "../professionInfo.js";
+import { getCharacterAsset, renderAssetHtml } from "../mapAssets.js";
+import { playReactionMinigame, DUTY_MINIGAME_THEMES } from "../reactionMinigame.js";
+
+// Куда "идёт" персонаж на маленькой анимации при "Поехать на работу" —
+// картинка здания необязательна (пока эмодзи), меняется так же, как любые
+// другие ассеты игры: см. assets/README.md.
+const WORK_DEST_ICON = { police: "🚓", taxi: "🚕", courier: "🛵" };
+const WORK_WALK_ANIM_MS = 1150;
+
+// Показывает короткую анимацию "идёт на работу" внутри контейнера и сама
+// убирает себя по завершении. Ничего не решает и ни на что не влияет —
+// чисто визуальная пауза перед показом настоящего результата с сервера.
+function playWorkWalkAnimation(container, destEmoji) {
+    const walker = getCharacterAsset("player_avatar_walk");
+    return new Promise((resolve) => {
+        container.innerHTML = `
+            <div class="work-walk-strip">
+                <div class="work-walk-figure">${renderAssetHtml(walker)}</div>
+                <div class="work-walk-dest">${destEmoji}</div>
+            </div>
+        `;
+        setTimeout(resolve, WORK_WALK_ANIM_MS);
+    });
+}
 
 const REMOTE_PROFESSIONS = []; // раньше IT и Юриспруденция — обе профессии убраны из игры
 
@@ -104,7 +128,7 @@ export async function renderWorkScreen(root) {
         const goBtn = document.createElement("button");
         goBtn.className = "btn";
         goBtn.textContent = isStudent ? "🎓 Поехать учиться" : "🚕 Поехать на работу";
-        goBtn.onclick = () => goToWork(root, statusCard, isStudent);
+        goBtn.onclick = () => goToWork(root, statusCard, isStudent, profile.profession);
         statusCard.appendChild(goBtn);
         const resultEl = document.createElement("div");
         resultEl.id = "work-result";
@@ -262,9 +286,34 @@ async function appendPendingRequestsCard(root, body) {
     });
 }
 
+// Какой темой мини-раунда встречать разные типы заявок — не всё 1-в-1
+// совпадает с DUTY_MINIGAME_THEMES по названию, поэтому отдельный алиас.
+// Типов, которых здесь нет (rank_confirm, duty_shift, catch_thief_chat и
+// т.п.), мини-раунд не касается — для них "Принять и разобрать" работает
+// ровно как раньше, без анимации.
+const DUTY_TYPE_TO_THEME = {
+    doctor: "doctor", prescription: "doctor",
+    firefighter: "firefighter",
+    police: "police",
+    teacher: "teacher", graduation_exam: "teacher", certify: "teacher", profession_switch: "teacher", extra_lesson: "teacher",
+    repair: "repair", home_repair: "repair", build_house: "repair", gov_repair: "repair",
+    rescue: "rescue", catastrophe_response: "rescue",
+};
+
 async function acceptRequest(requestId, requestType, btn, rowResult, row) {
     btn.disabled = true;
     btn.textContent = "Разбираем…";
+
+    // Короткий мини-раунд перед самой заявкой — см. js/reactionMinigame.js:
+    // он не влияет на итог (это по-прежнему решает сервер), но превращает
+    // "нажал кнопку — прочитал текст" в настоящее маленькое действие.
+    const themeKey = DUTY_TYPE_TO_THEME[requestType];
+    if (themeKey && DUTY_MINIGAME_THEMES[themeKey]) {
+        rowResult.innerHTML = `<div class="mini-rx-wrap"></div>`;
+        await playReactionMinigame(rowResult.querySelector(".mini-rx-wrap"), DUTY_MINIGAME_THEMES[themeKey]);
+    }
+
+    rowResult.innerHTML = `<div class="loading">Отправляем результат…</div>`;
     try {
         const result = await apiFetch(`/api/duty/${requestId}/accept`, { method: "POST" });
         rowResult.innerHTML = `<div class="profile-row" style="color:#7ee787">${formatOutcome(result)}</div>`;
@@ -340,8 +389,10 @@ function addBtn(container, label, onClick) {
     container.appendChild(btn);
 }
 
-async function goToWork(root, statusCard, isStudent) {
+async function goToWork(root, statusCard, isStudent, profession) {
     const resultEl = statusCard.querySelector("#work-result");
+    const destEmoji = isStudent ? "🏫" : (WORK_DEST_ICON[profession] || "🏢");
+    await playWorkWalkAnimation(resultEl, destEmoji);
     resultEl.innerHTML = `<div class="loading">Выполняем…</div>`;
     try {
         const result = await apiFetch("/api/work/go_to_work", { method: "POST" });

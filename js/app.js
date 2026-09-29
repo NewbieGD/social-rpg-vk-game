@@ -5,8 +5,10 @@ import { renderExamScreen, renderPddScreen, renderChoosingScreen, renderCriminal
 import { renderIntroScreen } from "./screens/intro.js";
 import { renderShell } from "./shell.js";
 import { USE_STREET_THEME } from "./themeConfig.js";
+import { initDayNightTheme } from "./dayNight.js";
 
 if (USE_STREET_THEME) document.body.classList.add("theme-street");
+initDayNightTheme();
 
 const root = document.getElementById("app");
 

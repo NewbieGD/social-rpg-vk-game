@@ -283,11 +283,26 @@ async function switchTo(screenId, content, nav, navItems) {
     nav.querySelectorAll(".nav-btn").forEach((btn) => btn.classList.remove("active"));
     nav.querySelector(`#nav-${screenId}`).classList.add("active");
 
+    // Лёгкий переход между вкладками: старое содержимое чуть гаснет и
+    // сдвигается, затем рендерим новое и сразу проявляем его обратно.
+    // Каждая отдельная .card внутри при этом всё равно доиграет свою
+    // собственную анимацию появления (card-enter) — эти два эффекта не
+    // конфликтуют, просто складываются.
+    content.classList.add("screen-content-leaving");
+    await wait(90);
+
     const item = navItems.find((i) => i.id === screenId);
     await item.render(content);
+
+    content.classList.remove("screen-content-leaving");
+    content.scrollTop = 0;
 
     if (screenId === "notifications") {
         const badge = nav.querySelector("#notif-badge");
         if (badge) badge.style.display = "none";
     }
+}
+
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

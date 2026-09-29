@@ -544,10 +544,36 @@ body.theme-street .buff-icon-negative {
 
 /* Шапка профиля: кусок вашей улицы + имя игрока на вывеске */
 .street-hero {
+    position: relative;
     height: 170px;
     border-radius: 14px;
     background: url("assets/backgrounds/game-bg.jpg") 64% 38% / cover no-repeat, #1d1a2b;
     border: 1px solid #332f45;
+}
+
+/* День/ночь по настоящему местному времени игрока (js/dayNight.js ставит
+   класс на <body> один раз при входе и обновляет раз в 10 минут). Просто
+   полупрозрачная подсветка поверх той же самой картинки — никаких вторых
+   фонов не грузим. */
+.street-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    transition: background 0.6s ease;
+}
+
+body.daytime-day .street-hero::after {
+    background: linear-gradient(180deg, rgba(255, 214, 140, 0.05), rgba(255, 214, 140, 0));
+}
+
+body.daytime-evening .street-hero::after {
+    background: linear-gradient(180deg, rgba(255, 140, 90, 0.16), rgba(60, 30, 60, 0.22));
+}
+
+body.daytime-night .street-hero::after {
+    background: linear-gradient(180deg, rgba(10, 12, 40, 0.4), rgba(10, 12, 40, 0.55));
 }
 
 .street-sign {
