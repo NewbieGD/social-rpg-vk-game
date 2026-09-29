@@ -3,30 +3,6 @@ import { screenHeader } from "../screenHeader.js";
 import { burstConfetti } from "../fx.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 import { PROFESSION_INFO } from "../professionInfo.js";
-import { getCharacterAsset, renderAssetHtml } from "../mapAssets.js";
-import { playReactionMinigame, DUTY_MINIGAME_THEMES } from "../reactionMinigame.js";
-
-// Куда "идёт" персонаж на маленькой анимации при "Поехать на работу" —
-// картинка здания необязательна (пока эмодзи), меняется так же, как любые
-// другие ассеты игры: см. assets/README.md.
-const WORK_DEST_ICON = { police: "🚓", taxi: "🚕", courier: "🛵" };
-const WORK_WALK_ANIM_MS = 1150;
-
-// Показывает короткую анимацию "идёт на работу" внутри контейнера и сама
-// убирает себя по завершении. Ничего не решает и ни на что не влияет —
-// чисто визуальная пауза перед показом настоящего результата с сервера.
-function playWorkWalkAnimation(container, destEmoji) {
-    const walker = getCharacterAsset("player_avatar_walk");
-    return new Promise((resolve) => {
-        container.innerHTML = `
-            <div class="work-walk-strip">
-                <div class="work-walk-figure">${renderAssetHtml(walker)}</div>
-                <div class="work-walk-dest">${destEmoji}</div>
-            </div>
-        `;
-        setTimeout(resolve, WORK_WALK_ANIM_MS);
-    });
-}
 
 const REMOTE_PROFESSIONS = []; // раньше IT и Юриспруденция — обе профессии убраны из игры
 
@@ -57,7 +33,8 @@ export async function renderWorkScreen(root) {
         sub: profile.profession_name || "",
         fallbackTitle: titleText,
     });
-    root.innerHTML = `${header.includes("street-hero") ? "" : `<div class="work-banner">${bannerText}</div>`}${header}<div id="work-body"></div>`;
+    root.innerHTML = `${header.includes("street-hero") ? "" : `<div class="work-banner">${bannerText}</div>`}${header}<div id="bribe-offers"></div><div id="work-body"></div>`;
+    if (profile.profession === "police") loadBribeOffers(root);
     const body = root.querySelector("#work-body");
 
     if (profile.stage === "criminal") {
@@ -128,7 +105,7 @@ export async function renderWorkScreen(root) {
         const goBtn = document.createElement("button");
         goBtn.className = "btn";
         goBtn.textContent = isStudent ? "🎓 Поехать учиться" : "🚕 Поехать на работу";
-        goBtn.onclick = () => goToWork(root, statusCard, isStudent, profile.profession);
+        goBtn.onclick = () => goToWork(root, statusCard, isStudent);
         statusCard.appendChild(goBtn);
         const resultEl = document.createElement("div");
         resultEl.id = "work-result";
@@ -286,34 +263,9 @@ async function appendPendingRequestsCard(root, body) {
     });
 }
 
-// Какой темой мини-раунда встречать разные типы заявок — не всё 1-в-1
-// совпадает с DUTY_MINIGAME_THEMES по названию, поэтому отдельный алиас.
-// Типов, которых здесь нет (rank_confirm, duty_shift, catch_thief_chat и
-// т.п.), мини-раунд не касается — для них "Принять и разобрать" работает
-// ровно как раньше, без анимации.
-const DUTY_TYPE_TO_THEME = {
-    doctor: "doctor", prescription: "doctor",
-    firefighter: "firefighter",
-    police: "police",
-    teacher: "teacher", graduation_exam: "teacher", certify: "teacher", profession_switch: "teacher", extra_lesson: "teacher",
-    repair: "repair", home_repair: "repair", build_house: "repair", gov_repair: "repair",
-    rescue: "rescue", catastrophe_response: "rescue",
-};
-
 async function acceptRequest(requestId, requestType, btn, rowResult, row) {
     btn.disabled = true;
     btn.textContent = "Разбираем…";
-
-    // Короткий мини-раунд перед самой заявкой — см. js/reactionMinigame.js:
-    // он не влияет на итог (это по-прежнему решает сервер), но превращает
-    // "нажал кнопку — прочитал текст" в настоящее маленькое действие.
-    const themeKey = DUTY_TYPE_TO_THEME[requestType];
-    if (themeKey && DUTY_MINIGAME_THEMES[themeKey]) {
-        rowResult.innerHTML = `<div class="mini-rx-wrap"></div>`;
-        await playReactionMinigame(rowResult.querySelector(".mini-rx-wrap"), DUTY_MINIGAME_THEMES[themeKey]);
-    }
-
-    rowResult.innerHTML = `<div class="loading">Отправляем результат…</div>`;
     try {
         const result = await apiFetch(`/api/duty/${requestId}/accept`, { method: "POST" });
         rowResult.innerHTML = `<div class="profile-row" style="color:#7ee787">${formatOutcome(result)}</div>`;
@@ -389,10 +341,8 @@ function addBtn(container, label, onClick) {
     container.appendChild(btn);
 }
 
-async function goToWork(root, statusCard, isStudent, profession) {
+async function goToWork(root, statusCard, isStudent) {
     const resultEl = statusCard.querySelector("#work-result");
-    const destEmoji = isStudent ? "🏫" : (WORK_DEST_ICON[profession] || "🏢");
-    await playWorkWalkAnimation(resultEl, destEmoji);
     resultEl.innerHTML = `<div class="loading">Выполняем…</div>`;
     try {
         const result = await apiFetch("/api/work/go_to_work", { method: "POST" });
@@ -583,6 +533,50 @@ function confirmSwitchProfession(card, opt) {
                 showGameStylePopup("🎓 Заявка отправлена!", "Учитель уже занимается твоим обучением — жди уведомления об исходе.");
             } catch (e) {
                 showGameStylePopup("❌ Не получилось", e.message);
+            }
+        };
+    });
+}
+
+
+// Предложения взятки от заключённых воров (только полиция)
+async function loadBribeOffers(root) {
+    const box = root.querySelector("#bribe-offers");
+    if (!box) return;
+    let offers;
+    try {
+        offers = await apiFetch("/api/prison/bribe_offers");
+    } catch (e) {
+        return;
+    }
+    box.innerHTML = offers.map((o) => {
+        const mins = Math.max(0, Math.ceil((new Date(o.deadline) - Date.now()) / 60000));
+        return `<div class="card bribe-offer">
+            <div class="subtitle">💰 Заключённый вор предлагает взятку: <b>${o.amount.toFixed(2)} ₭</b></div>
+            <div class="profile-dim">На ответ осталось ~${mins} мин, потом предложение уйдёт другому полицейскому.</div>
+            <div class="profile-dim" style="color:#ffb454;margin-top:6px">⚠️ Возьмёшь — вор выйдет на свободу, а с шансом 15% будет служебная проверка: штраф 110% от взятки и −10 рейтинга.</div>
+            <div class="profile-dim">Откажешь — +1 рейтинг, а вору +1 час к сроку.</div>
+            <div class="bribe-offer-buttons">
+                <button class="btn" data-bribe="${o.id}" data-accept="1">Взять взятку</button>
+                <button class="btn btn-secondary" data-bribe="${o.id}" data-accept="0">Отказать</button>
+            </div>
+            <div class="bribe-offer-result"></div>
+        </div>`;
+    }).join("");
+    box.querySelectorAll("[data-bribe]").forEach((btn) => {
+        btn.onclick = async () => {
+            const card = btn.closest(".bribe-offer");
+            const res = card.querySelector(".bribe-offer-result");
+            card.querySelectorAll("[data-bribe]").forEach((b) => { b.disabled = true; });
+            try {
+                const r = await apiFetch(`/api/prison/bribe/${btn.dataset.bribe}/respond`, { method: "POST", body: { accept: btn.dataset.accept === "1" } });
+                res.innerHTML = r.status === "refused"
+                    ? `<div class="profile-row" style="color:#7ee787">✅ Отказал(а). +1 к рейтингу.</div>`
+                    : r.checked
+                        ? `<div class="profile-row" style="color:#ff5a5f">🕵️ Служебная проверка раскрыла взятку — штраф и −10 рейтинга.</div>`
+                        : `<div class="profile-row" style="color:#f2a24a">💰 Взятка получена, вор на свободе. Проверки не было.</div>`;
+            } catch (e) {
+                res.innerHTML = `<div class="error">${e.message}</div>`;
             }
         };
     });

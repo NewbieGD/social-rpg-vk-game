@@ -544,98 +544,10 @@ body.theme-street .buff-icon-negative {
 
 /* Шапка профиля: кусок вашей улицы + имя игрока на вывеске */
 .street-hero {
-    position: relative;
     height: 170px;
     border-radius: 14px;
     background: url("assets/backgrounds/game-bg.jpg") 64% 38% / cover no-repeat, #1d1a2b;
     border: 1px solid #332f45;
-}
-
-/* День/ночь по настоящему местному времени игрока (js/dayNight.js ставит
-   класс на <body> один раз при входе и обновляет раз в 10 минут). Просто
-   полупрозрачная подсветка поверх той же самой картинки — никаких вторых
-   фонов не грузим. */
-.street-hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    transition: background 0.6s ease;
-}
-
-body.daytime-day .street-hero::after {
-    background: linear-gradient(180deg, rgba(255, 214, 140, 0.05), rgba(255, 214, 140, 0));
-}
-
-body.daytime-evening .street-hero::after {
-    background: linear-gradient(180deg, rgba(255, 140, 90, 0.16), rgba(60, 30, 60, 0.22));
-}
-
-body.daytime-night .street-hero::after {
-    background: linear-gradient(180deg, rgba(10, 12, 40, 0.4), rgba(10, 12, 40, 0.55));
-}
-
-/* Фонари на уличной сцене — два тёплых пятна света у земли. Днём их не
-   видно совсем, вечером/ночью загораются. Отдельный слой (::before), а не
-   часть ::after, — чтобы плавная подсветка неба и свечение фонарей не
-   мешали друг другу и жили каждый своей анимацией. */
-.street-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    opacity: 0;
-    background:
-        radial-gradient(46px 46px at 9% 88%, rgba(255, 205, 120, 0.65), transparent 70%),
-        radial-gradient(46px 46px at 91% 82%, rgba(255, 205, 120, 0.65), transparent 70%);
-    transition: opacity 0.6s ease;
-}
-
-body.daytime-evening .street-hero::before {
-    opacity: 0.55;
-}
-
-body.daytime-night .street-hero::before {
-    opacity: 1;
-    animation: street-lamp-flicker 4s ease-in-out infinite;
-}
-
-@keyframes street-lamp-flicker {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.85; }
-    62% { opacity: 1; }
-}
-
-/* ---------- То же самое, но для полноэкранной карты города ---------- */
-/* Карта рисуется отдельным SVG-движком (js/screens/cityMap.js) со своими
-   всегда горящими окнами и фонарями — трогать саму генерацию не стали,
-   чтобы не рисковать. Вместо этого — та же полупрозрачная плёнка поверх
-   всей карты целиком, тем же способом, что и на уличной шапке. */
-.city-map-wrap {
-    position: relative;
-}
-
-.city-map-wrap::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    transition: background 0.6s ease;
-    z-index: 5;
-}
-
-body.daytime-day .city-map-wrap::after {
-    background: linear-gradient(180deg, rgba(255, 224, 160, 0.04), rgba(255, 224, 160, 0));
-}
-
-body.daytime-evening .city-map-wrap::after {
-    background: linear-gradient(180deg, rgba(255, 140, 90, 0.1), rgba(50, 25, 55, 0.16));
-}
-
-body.daytime-night .city-map-wrap::after {
-    background: linear-gradient(180deg, rgba(8, 10, 35, 0.28), rgba(8, 10, 35, 0.4));
 }
 
 .street-sign {

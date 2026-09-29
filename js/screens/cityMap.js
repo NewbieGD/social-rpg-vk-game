@@ -576,6 +576,7 @@ function buildingStatsHtml(st) {
             row("✅", "Выполнено заявок", `${st.done_total}`),
             row("📅", "Выполнено сегодня", `${st.done_today} из ${st.requests_today}`),
             st.code === "police" ? row("🚔", "Поймано воров", `${st.thieves_caught}`) : "",
+            st.code === "police" ? row("💰", "Подкуплено полицейских", `${st.bribes_accepted ?? 0}`) : "",
             row("💰", "Налоги в казну от вызовов", money(st.taxes)),
             `<div class="building-stat-row"><span>🏅 Последним справился</span>${person(st.last_worker)}</div>`,
         ].join("");

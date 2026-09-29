@@ -140,17 +140,13 @@ export async function renderProfileScreen(root) {
         }
     }
     if (user.stage === "criminal") {
-        const authorityPct = Math.min(100, Number(user.authority));
         mainLines.push(`<div class="profile-row">🔫 Авторитет: ${Number(user.authority).toFixed(2)}/100</div>`);
-        mainLines.push(`<div class="progress-bar"><div class="progress-bar-fill" style="width:${authorityPct}%"></div></div>`);
         mainLines.push(`<div class="profile-dim" style="margin-bottom:4px">При 100 можно баллотироваться в Боссы Мафии и в депутаты (президенты).</div>`);
     } else {
-        const ratingPct = Math.min(100, Number(user.rating));
         mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
-        mainLines.push(`<div class="progress-bar"><div class="progress-bar-fill" style="width:${ratingPct}%"></div></div>`);
     }
     mainLines.push(`<div class="profile-row">⚔️ Дуэли: ${user.duel_wins || 0} побед / ${user.duel_losses || 0} поражений</div>`);
-    mainLines.push(`<div id="profile-gov-bar-slot"><div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${user.government_rating_level || 0}</div></div>`);
+    mainLines.push(`<div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${user.government_rating_level || 0}</div>`);
     mainLines.push(`<div class="profile-row">🏛 Налог в стране: ${(user.tax_rate * 100).toFixed(1)}%</div>`);
 
     const badges = [];
@@ -239,7 +235,6 @@ export async function renderProfileScreen(root) {
     }
     bindInfoButtons(root);
     await checkRecruitmentOffer(root);
-    loadProfileGovBar(root); // не ждём — не должно задерживать показ остального профиля
 
     // раньше это делалось внутри Promise.all вместе с /api/profile, и если VK
     // Bridge зависал (случается вне настоящего приложения VK), весь экран
@@ -541,26 +536,6 @@ async function requestRankConfirm(root, btn) {
         btn.disabled = false;
         showGameStylePopup("❌ Не получилось", e.message);
     }
-}
-
-// Тот же /api/citizen_contribution, что использует вкладка Государство
-// (js/screens/state.js) для полноценной карточки с прогресс-баром — здесь
-// показываем компактную версию прямо в профиле, чтобы прогресс был на виду
-// без захода в отдельную вкладку. Грузится отдельно и не блокирует профиль.
-async function loadProfileGovBar(root) {
-    const slot = root.querySelector("#profile-gov-bar-slot");
-    if (!slot) return;
-    let data;
-    try {
-        data = await apiFetch("/api/citizen_contribution");
-    } catch (e) {
-        return; // не критично — просто останется обычная текстовая строка
-    }
-    const pct = Math.min(100, (data.progress_within_level / data.progress_needed) * 100);
-    slot.innerHTML = `
-        <div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${data.government_level}</div>
-        <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-    `;
 }
 
 async function checkRecruitmentOffer(root) {
