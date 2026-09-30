@@ -2,10 +2,212 @@
 // маршруты) — из cityMap.js, здесь только объёмная отрисовка и движение.
 import { apiFetch } from "../api.js";
 import { CITY_MAP_ASSETS } from "../cityMapAssets.js";
-import {
-    W, H, ROAD, V_STREETS, H_STREETS, COLS, ROWS, BUILDINGS,
-    cellRect, doorPoints, shortestRoute, showMovementInfo, showBuildingInfo, hash,
-} from "./cityMap.js";
+import { showGamePopupWithContent } from "../gamePopup.js";
+
+// ---------- логика мира (своя копия, чтобы не зависеть от версии cityMap.js в кэше браузера) ----------
+const W = 700;
+export const H = 1000;
+export const ROAD = 40;
+export const V_STREETS = [233, 467];
+export const H_STREETS = [200, 480, 760];
+export const COLS = [[0, 213], [253, 447], [487, 700]];
+export const ROWS = [[0, 180], [220, 460], [500, 740], [780, 1000]];
+
+
+
+function cellRect(col, row, pad = 20) {
+    const [x0, x1] = COLS[col];
+    const [y0, y1] = ROWS[row];
+    return { x: x0 + pad, y: y0 + pad, w: x1 - x0 - pad * 2, h: y1 - y0 - pad * 2 };
+}
+
+
+
+const BUILDINGS = [
+    { code: "police", title: "Полицейский участок", cell: [0, 0], door: "bottom", labels: ["Полицейский участок"],
+      info: "Сюда приезжают на смену полицейские, отсюда выезжают на вызовы об ограблениях." },
+    { code: "government", title: "Гос. управление", cell: [1, 0], door: "bottom", labels: ["Гос. управление"],
+      info: "Сердце страны: президент, министры, депутаты и государственная казна." },
+    { code: "hospital", title: "Больница", cell: [2, 0], door: "bottom", labels: ["Больница"],
+      info: "Отсюда выезжает скорая к заболевшим и раненым, здесь работают врачи." },
+    { code: "fire", title: "Пожарная часть", cell: [0, 1], door: "right", labels: ["Пожарная часть"],
+      info: "Пожарные и спасатели МЧС выезжают отсюда на пожары и спасение жителей." },
+    { code: "school", title: "Школа", cell: [2, 1], door: "left", labels: ["Школа"],
+      info: "Здесь учатся студенты и проходят пересдачи у учителей." },
+    { code: "factory", title: "Завод", cell: [0, 2], door: "right", labels: ["Завод"],
+      info: "Завод производит товары, которые потом появляются в магазине." },
+    { code: "shop", title: "Магазин", cell: [2, 2], door: "left", labels: ["Магазин"],
+      info: "Отсюда курьеры везут покупки жителям." },
+    { code: "army", title: "Военная база", cell: [0, 3], door: "top", labels: ["Военная база"],
+      info: "Здесь служат жители, подписавшие армейский контракт." },
+    { code: "private_gate", title: "Частный сектор", cell: [1, 3], door: "top", labels: ["Дом"],
+      info: "Въезд в частный сектор — здесь стоят купленные дома жителей." },
+    { code: "office", title: "Деловой квартал", cell: [2, 3], door: "top", labels: ["Место работы"],
+      info: "Офисы и стройки — сюда едут на работу остальные профессии." },
+];
+
+
+
+function doorPoints(rect, side) {
+    const cx = rect.x + rect.w / 2;
+    const cy = rect.y + rect.h / 2;
+    if (side === "bottom") {
+        const y = Math.min(...H_STREETS.filter((s) => s > rect.y + rect.h));
+        return { door: { x: cx, y: rect.y + rect.h }, curb: { x: cx, y } };
+    }
+    if (side === "top") {
+        const y = Math.max(...H_STREETS.filter((s) => s < rect.y));
+        return { door: { x: cx, y: rect.y }, curb: { x: cx, y } };
+    }
+    if (side === "right") {
+        const x = Math.min(...V_STREETS.filter((s) => s > rect.x + rect.w));
+        return { door: { x: rect.x + rect.w, y: cy }, curb: { x, y: cy } };
+    }
+    const x = Math.max(...V_STREETS.filter((s) => s < rect.x));
+    return { door: { x: rect.x, y: cy }, curb: { x, y: cy } };
+}
+
+
+
+function shortestRoute(fromCurb, toCurb) {
+    const nodes = [];
+    const key = (p) => `${Math.round(p.x)},${Math.round(p.y)}`;
+    const add = (p) => { if (!nodes.some((n) => key(n) === key(p))) nodes.push({ x: p.x, y: p.y }); };
+    V_STREETS.forEach((x) => H_STREETS.forEach((y) => add({ x, y })));
+    V_STREETS.forEach((x) => { add({ x, y: 0 }); add({ x, y: H }); });
+    H_STREETS.forEach((y) => { add({ x: 0, y }); add({ x: W, y }); });
+    add(fromCurb);
+    add(toCurb);
+
+    const edges = new Map(nodes.map((n) => [key(n), []]));
+    const link = (list, axis) => {
+        list.sort((a, b) => a[axis] - b[axis]);
+        for (let i = 0; i + 1 < list.length; i++) {
+            const a = list[i], b = list[i + 1];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            edges.get(key(a)).push({ to: b, d });
+            edges.get(key(b)).push({ to: a, d });
+        }
+    };
+    V_STREETS.forEach((x) => link(nodes.filter((n) => Math.abs(n.x - x) < 0.5), "y"));
+    H_STREETS.forEach((y) => link(nodes.filter((n) => Math.abs(n.y - y) < 0.5), "x"));
+
+    const dist = new Map([[key(fromCurb), 0]]);
+    const prev = new Map();
+    const todo = new Set(nodes.map(key));
+    const byKey = new Map(nodes.map((n) => [key(n), n]));
+    while (todo.size) {
+        let best = null;
+        todo.forEach((k) => { if (dist.has(k) && (best === null || dist.get(k) < dist.get(best))) best = k; });
+        if (best === null) break;
+        todo.delete(best);
+        if (best === key(toCurb)) break;
+        for (const e of edges.get(best)) {
+            const nk = key(e.to);
+            const nd = dist.get(best) + e.d;
+            if (!dist.has(nk) || nd < dist.get(nk)) { dist.set(nk, nd); prev.set(nk, best); }
+        }
+    }
+    const path = [];
+    let k = key(toCurb);
+    while (k) { path.unshift(byKey.get(k)); k = prev.get(k); }
+    return path.length && key(path[0]) === key(fromCurb) ? path : [fromCurb, toCurb];
+}
+
+
+
+function hash(s) {
+    let h = 2166136261;
+    const str = String(s);
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+}
+
+
+
+function showMovementInfo(mv, helpers, overlay) {
+    if (mv.anonymous) {
+        showGamePopupWithContent("🕶 Кто-то в капюшоне", (content) => {
+            content.innerHTML = `<div class="profile-row">${escapeHtml(mv.message)}</div>
+                <div class="profile-dim">Лица не разглядеть. Если жертва узнает вора — сможет заявить в полицию.</div>`;
+        });
+        return;
+    }
+    showGamePopupWithContent(`${mv.icon} В пути`, (content) => {
+        content.innerHTML = `<div class="profile-row">${escapeHtml(mv.message)}</div>
+            <div class="profile-dim">${escapeHtml(mv.from_label)} → ${escapeHtml(mv.to_label)}</div>`;
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.style.marginTop = "10px";
+        btn.textContent = "👤 Открыть профиль";
+        btn.onclick = () => helpers.showPublicProfile(overlay, mv.vk_id);
+        content.appendChild(btn);
+    });
+}
+
+export function showBuildingInfo(b, helpers, overlay) {
+    showGamePopupWithContent(b.title, async (content) => {
+        content.innerHTML = `<div class="profile-dim" style="margin-bottom:10px">${escapeHtml(b.info)}</div><div class="loading">Загружаем сводку…</div>`;
+        let st;
+        try {
+            st = await apiFetch(`/api/map/building/${b.code}`);
+        } catch (e) {
+            content.querySelector(".loading").outerHTML = `<div class="error">${escapeHtml(e.message)}</div>`;
+            return;
+        }
+        content.querySelector(".loading").outerHTML = `<div class="building-stats">${buildingStatsHtml(st)}</div>`;
+        content.querySelectorAll("[data-person]").forEach((el) => {
+            el.onclick = () => helpers.showPublicProfile(overlay, Number(el.dataset.person));
+        });
+    });
+}
+
+const money = (n) => `${Number(n || 0).toFixed(2)} ₭`;
+const person = (p) => p ? `<button class="building-person" data-person="${p.vk_id}">${escapeHtml(p.username ? "@" + p.username : "ID " + p.vk_id)}</button>` : "пока никто";
+const row = (icon, label, value) => `<div class="building-stat-row"><span>${icon} ${label}</span><b>${value}</b></div>`;
+
+function buildingStatsHtml(st) {
+    if (st.kind === "profession") {
+        return [
+            row("👥", `Работают (${escapeHtml(st.profession_name)})`, `${st.workers}${st.students ? ` + ${st.students} стаж.` : ""}`),
+            row("✅", "Выполнено заявок", `${st.done_total}`),
+            row("📅", "Выполнено сегодня", `${st.done_today} из ${st.requests_today}`),
+            st.code === "police" ? row("🚔", "Поймано воров", `${st.thieves_caught}`) : "",
+            st.code === "police" ? row("💰", "Подкуплено полицейских", `${st.bribes_accepted ?? 0}`) : "",
+            row("💰", "Налоги в казну от вызовов", money(st.taxes)),
+            `<div class="building-stat-row"><span>🏅 Последним справился</span>${person(st.last_worker)}</div>`,
+        ].join("");
+    }
+    if (st.kind === "factory") {
+        const recent = st.recent.length
+            ? st.recent.map((r) => `<div class="building-stat-row"><span>📦 ${escapeHtml(r.item_name)}</span>${person(r)}</div>`).join("")
+            : `<div class="profile-dim">Пока ничего не произведено.</div>`;
+        const top = st.top.length
+            ? st.top.map((r, i) => `<div class="building-stat-row"><span>${["🥇", "🥈", "🥉", "4.", "5."][i]} ${person(r)}</span><b>${r.count} шт.</b></div>`).join("")
+            : `<div class="profile-dim">Рейтинг появится после первых смен.</div>`;
+        return row("👷", "Работают на заводе", `${st.workers}`)
+            + `<div class="building-stat-title">Последние 5 товаров</div>${recent}`
+            + `<div class="building-stat-title">Лучшие сотрудники</div>${top}`;
+    }
+    if (st.kind === "shop") {
+        return row("🛍", "Продано сегодня", `${st.sold_today}`) + row("📈", "Продано за всё время", `${st.sold_total}`);
+    }
+    if (st.kind === "army") {
+        return row("🎖", "Служат по контракту", `${st.soldiers}`);
+    }
+    if (st.kind === "government") {
+        return [
+            row("🏛", "Страна", escapeHtml(st.country_name)),
+            `<div class="building-stat-row"><span>🎖 Президент</span>${person(st.president)}</div>`,
+            row("💰", "Казна", money(st.treasury)),
+            row("📊", "Налог", `${(st.tax_rate * 100).toFixed(1)}%`),
+            row("👥", "Жителей", `${st.population}`),
+            row("🕶", "Воров", `${st.criminals}`),
+        ].join("");
+    }
+    return "";
+}
+
 
 const C = Math.cos(Math.PI / 6);
 const SLAB = 18;
