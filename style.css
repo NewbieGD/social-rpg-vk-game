@@ -5690,3 +5690,128 @@ body.theme-street .card.card-frame-aurora {
     height: 100%;
     padding: 4px;
 }
+
+/* ---------- Изометрический город (js/screens/isoCity.js) ---------- */
+
+.iso-city {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+}
+
+.iso-flicker {
+    animation: iso-flicker 6s ease-in-out infinite;
+}
+
+@keyframes iso-flicker {
+    0%, 60%, 100% { fill: #f2c46a; }
+    65%, 85% { fill: #2a2540; }
+}
+
+.iso-siren-red { fill: #ff4d4d; animation: iso-siren 0.9s steps(2, jump-none) infinite; }
+.iso-siren-blue { fill: #3d7bff; animation: iso-siren 0.9s steps(2, jump-none) infinite reverse; }
+
+@keyframes iso-siren {
+    0% { opacity: 1; }
+    100% { opacity: 0.25; }
+}
+
+.iso-cross {
+    animation: iso-cross 2.4s ease-in-out infinite;
+}
+
+@keyframes iso-cross {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.iso-mover {
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .iso-flicker, .iso-siren-red, .iso-siren-blue, .iso-cross { animation: none; }
+}
+
+/* полная изометрическая карта */
+.iso-scroll {
+    position: relative;
+    overflow: auto;
+    max-height: calc(100vh - 170px);
+    max-height: calc(100dvh - 170px);
+    border-radius: 12px;
+    background: #16131f;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+}
+
+.iso-city-full {
+    max-width: none;
+    height: auto;
+    border-radius: 0;
+}
+
+.iso-zoom {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0 4px -44px auto;
+    width: max-content;
+    padding: 6px;
+}
+
+.iso-zoom-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid #47465c;
+    background: rgba(22, 19, 31, 0.9);
+    color: #ffe3bd;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.iso-flag {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: iso-flag 2.2s ease-in-out infinite;
+}
+
+@keyframes iso-flag {
+    0%, 100% { transform: skewY(0deg) scaleX(1); }
+    50% { transform: skewY(-8deg) scaleX(0.88); }
+}
+
+.iso-clock {
+    animation: iso-clock 12s linear infinite;
+}
+
+@keyframes iso-clock {
+    to { transform: rotate(360deg); }
+}
+
+.iso-smoke {
+    animation: iso-smoke 3.4s ease-out infinite;
+}
+
+.iso-smoke-2 {
+    animation-delay: 1.7s;
+}
+
+@keyframes iso-smoke {
+    0% { transform: translate(0, 4px) scale(0.6); opacity: 0.75; }
+    100% { transform: translate(8px, -34px) scale(2.2); opacity: 0; }
+}
+
+.iso-beacon {
+    animation: iso-cross 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .iso-flag, .iso-clock, .iso-smoke, .iso-beacon { animation: none; }
+}

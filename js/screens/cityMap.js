@@ -7,13 +7,13 @@ import { CITY_MAP_ASSETS } from "../cityMapAssets.js";
 // город на 12 кварталов (3 колонки × 4 ряда). Координаты улиц — общая
 // система для зданий и транспорта, поэтому маршрут всегда доходит до двери.
 
-const W = 700;
-const H = 1000;
-const ROAD = 40;
-const V_STREETS = [233, 467];
-const H_STREETS = [200, 480, 760];
-const COLS = [[0, 213], [253, 447], [487, 700]];
-const ROWS = [[0, 180], [220, 460], [500, 740], [780, 1000]];
+export const W = 700;
+export const H = 1000;
+export const ROAD = 40;
+export const V_STREETS = [233, 467];
+export const H_STREETS = [200, 480, 760];
+export const COLS = [[0, 213], [253, 447], [487, 700]];
+export const ROWS = [[0, 180], [220, 460], [500, 740], [780, 1000]];
 
 const C = {
     ground: "#1d1a2b", block: "#241f33", road: "#2b2740", walk: "#332f45",
@@ -22,14 +22,14 @@ const C = {
     tree: "#2f4a3a", treeDark: "#243a2e",
 };
 
-function cellRect(col, row, pad = 20) {
+export function cellRect(col, row, pad = 20) {
     const [x0, x1] = COLS[col];
     const [y0, y1] = ROWS[row];
     return { x: x0 + pad, y: y0 + pad, w: x1 - x0 - pad * 2, h: y1 - y0 - pad * 2 };
 }
 
 // Здания: где стоят, куда смотрит дверь, как называются в маршрутах сервера.
-const BUILDINGS = [
+export const BUILDINGS = [
     { code: "police", title: "Полицейский участок", cell: [0, 0], door: "bottom", labels: ["Полицейский участок"],
       info: "Сюда приезжают на смену полицейские, отсюда выезжают на вызовы об ограблениях." },
     { code: "government", title: "Гос. управление", cell: [1, 0], door: "bottom", labels: ["Гос. управление"],
@@ -52,7 +52,7 @@ const BUILDINGS = [
       info: "Офисы и стройки — сюда едут на работу остальные профессии." },
 ];
 
-function doorPoints(rect, side) {
+export function doorPoints(rect, side) {
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
     if (side === "bottom") {
@@ -73,7 +73,7 @@ function doorPoints(rect, side) {
 
 // ---------- Маршруты по улицам (как в навигаторе) ----------
 // Узлы: перекрёстки + точки у дверей. Соседние узлы на одной улице связаны.
-function shortestRoute(fromCurb, toCurb) {
+export function shortestRoute(fromCurb, toCurb) {
     const nodes = [];
     const key = (p) => `${Math.round(p.x)},${Math.round(p.y)}`;
     const add = (p) => { if (!nodes.some((n) => key(n) === key(p))) nodes.push({ x: p.x, y: p.y }); };
@@ -288,7 +288,7 @@ function star(cx, cy, R) {
     return pts.join(" ");
 }
 
-function hash(s) {
+export function hash(s) {
     let h = 2166136261;
     const str = String(s);
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -548,7 +548,7 @@ function driveVehicle(wrap, mv, from, to, helpers, overlay) {
     }, (dur + 1.2) * 1000);
 }
 
-function showMovementInfo(mv, helpers, overlay) {
+export function showMovementInfo(mv, helpers, overlay) {
     if (mv.anonymous) {
         showGamePopupWithContent("🕶 Кто-то в капюшоне", (content) => {
             content.innerHTML = `<div class="profile-row">${escapeHtml(mv.message)}</div>
@@ -568,7 +568,7 @@ function showMovementInfo(mv, helpers, overlay) {
     });
 }
 
-function showBuildingInfo(b, helpers, overlay) {
+export function showBuildingInfo(b, helpers, overlay) {
     showGamePopupWithContent(b.title, async (content) => {
         content.innerHTML = `<div class="profile-dim" style="margin-bottom:10px">${escapeHtml(b.info)}</div><div class="loading">Загружаем сводку…</div>`;
         let st;
