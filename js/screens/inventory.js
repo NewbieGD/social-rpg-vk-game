@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { itemArtHtml, hasItemArt } from "../itemArt.js";
 import { screenHeader } from "../screenHeader.js";
 
 const ITEM_ICONS = {
@@ -7,7 +8,7 @@ const ITEM_ICONS = {
     house: "🏠", gym: "🏋", vitamins: "💊", pills: "🩹",
     fire_insurance: "🧯", legal_insurance: "⚖️", stats_subscription: "📊",
     seller_license: "🤝", candidate: "🗳", balaclava: "🕶", fake_passport: "🛂",
-    blat: "🫱", lock: "🔐", license: "🪪",
+    trade_permit: "🫱", lock: "🔐", license: "🪪",
 };
 
 function iconFor(code) {
@@ -63,7 +64,7 @@ function renderGrid(root, items, isCriminal, pending, hasLicense) {
         const slot = document.createElement("div");
         slot.className = "inv-slot inv-slot-pending";
         slot.innerHTML = `
-            <div class="inv-slot-icon">${iconFor(p.code)}</div>
+            <div class="inv-slot-icon">${itemArtHtml(p.code, iconFor(p.code), 40)}</div>
             <div class="inv-slot-eta">${formatEta(p.seconds_left)}</div>
         `;
         slot.title = `${p.name} — ${p.courier_assigned ? "курьер назначен" : "ждём курьера или автовыдачи"}`;
@@ -75,7 +76,7 @@ function renderGrid(root, items, isCriminal, pending, hasLicense) {
         slot.className = "inv-slot";
         if (group.item.in_safe) slot.classList.add("inv-slot-safe");
         slot.innerHTML = `
-            <div class="inv-slot-icon">${iconFor(group.item.code)}</div>
+            <div class="inv-slot-icon">${itemArtHtml(group.item.code, iconFor(group.item.code), 40)}</div>
             ${group.count > 1 ? `<div class="inv-slot-count">${group.count}</div>` : ""}
             ${group.item.in_safe ? `<div class="inv-slot-lock">🔒</div>` : ""}
         `;
@@ -124,7 +125,8 @@ function renderItemCard(root, group, allItems, isCriminal) {
 
     root.innerHTML = `
         <div class="card">
-            <div class="title">${iconFor(item.code)} ${escapeHtml(item.name)}${group.count > 1 ? ` × ${group.count}` : ""}</div>
+            <div class="item-art-hero">${itemArtHtml(item.code, iconFor(item.code), 96)}</div>
+            <div class="title">${escapeHtml(item.name)}${group.count > 1 ? ` × ${group.count}` : ""}</div>
             <div class="subtitle">${escapeHtml(item.description || "")}</div>
             ${expiryLines}
             ${item.in_safe ? '<div class="profile-dim">🔒 Сейчас в сейфе</div>' : ""}

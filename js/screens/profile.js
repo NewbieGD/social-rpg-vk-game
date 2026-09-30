@@ -1,4 +1,5 @@
 import { apiFetch, clearToken } from "../api.js";
+import { itemArtHtml, hasItemArt } from "../itemArt.js";
 import { infoButton, bindInfoButtons } from "../infoPopups.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
 import { DEV_MODE } from "../config.js";
@@ -180,7 +181,7 @@ export async function renderProfileScreen(root) {
     const avatarFrameClass = isPresident ? " profile-avatar-president" : FRAME_CLASSES[user.active_frame] || "";
 
     const buffIcons = (user.buffs || []).map((b, i) =>
-        `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}"><img src="assets/icons/${b.code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${b.icon}</span></button>`
+        `<button class="buff-icon-btn ${b.positive ? "buff-icon-positive" : "buff-icon-negative"}" id="buff-icon-${i}">${hasItemArt(b.code) ? itemArtHtml(b.code, b.icon, 44) : `<img src="assets/icons/${b.code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${b.icon}</span>`}</button>`
     ).join("");
 
     const streetSignSub = escapeHtml(user.profession_name || STAGE_NAMES[user.stage] || "");
@@ -216,7 +217,14 @@ export async function renderProfileScreen(root) {
 
     (user.buffs || []).forEach((b, i) => {
         const btn = root.querySelector(`#buff-icon-${i}`);
-        btn.onclick = () => showBuffPopup(b);
+        btn.onclick = () => {
+            showBuffPopup(b);
+            // «Тебя ограбили» без опознанного вора — просто сообщение: прочитал и оно исчезло
+            if (b.dismiss_on_close) {
+                apiFetch("/api/profile/dismiss_robbery_info", { method: "POST" }).catch(() => {});
+                btn.remove();
+            }
+        };
     });
 
     const balanceEl = root.querySelector("#balance-value");
@@ -473,8 +481,7 @@ function showNewBuffsPopupQueue(buffs) {
     overlay.className = "chest-overlay";
     overlay.innerHTML = `
         <div class="chest-overlay-box">
-            <div class="chest-overlay-icon"><img src="assets/icons/${first.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-            <span style="display:none">${first.icon}</span></div>
+            <div class="chest-overlay-icon">${hasItemArt(first.code) ? itemArtHtml(first.code, "", 84) : `<img src="assets/icons/${first.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${first.icon}</span>`}</div>
             <div class="profile-dim" style="margin-bottom:4px">${first.positive ? "✨ Новый баф!" : "⚠️ Новый дебаф!"}</div>
             <div class="chest-overlay-title" style="color:${first.positive ? "#7ee787" : "#ff9eb5"};font-size:16px;font-weight:700">${escapeHtml(first.title)}</div>
             <div class="profile-dim" style="margin:8px 0 16px">${escapeHtml(first.description)}</div>
@@ -836,8 +843,7 @@ function showBuffPopup(buff) {
     overlay.className = "chest-overlay";
     overlay.innerHTML = `
         <div class="chest-overlay-box">
-            <div class="chest-overlay-icon"><img src="assets/icons/${buff.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-            <span style="display:none">${buff.icon}</span></div>
+            <div class="chest-overlay-icon">${hasItemArt(buff.code) ? itemArtHtml(buff.code, "", 84) : `<img src="assets/icons/${buff.code}.png" alt="" class="chest-overlay-icon-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${buff.icon}</span>`}</div>
             <div class="chest-overlay-title" style="color:${buff.positive ? "#7ee787" : "#ff9eb5"};font-size:16px;font-weight:700">${escapeHtml(buff.title)}</div>
             <div class="profile-dim" style="margin:8px 0 16px">${escapeHtml(buff.description)}</div>
             <button class="btn" id="buff-close-btn">Закрыть</button>

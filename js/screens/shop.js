@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { itemArtHtml, hasItemArt } from "../itemArt.js";
 import { USE_STREET_THEME } from "../themeConfig.js";
 import { screenHeader } from "../screenHeader.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
@@ -9,7 +10,7 @@ const ITEM_ICONS = {
     house: "🏠", gym: "🏋", vitamins: "💊", pills: "🩹",
     fire_insurance: "🧯", legal_insurance: "⚖️", stats_subscription: "📊",
     seller_license: "🤝", candidate: "🗳", balaclava: "🕶", fake_passport: "🛂",
-    blat: "🫱", lock: "🔐", license: "🪪",
+    trade_permit: "🫱", lock: "🔐", license: "🪪",
     thief_note: "🕵️", recruitment_list: "📋", stash: "🗝",
 };
 
@@ -17,7 +18,7 @@ const ITEM_ICONS = {
 // иначе эмодзи из ITEM_ICONS (как сейчас). Картинки можно добавлять по
 // одной, без правок кода.
 function itemIconHtml(code) {
-    return `<img class="shop-item-img" src="assets/items/${code}.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none">${iconFor(code)}</span>`;
+    return itemArtHtml(code, iconFor(code), 44);
 }
 
 function iconFor(code) {
@@ -181,8 +182,9 @@ function showItemPopup(item, allItems, profile, mode) {
         ? `💰 ${Number(item.price).toFixed(0)} ₭ (обычно ${Number(item.base_price).toFixed(0)}₭) — остаток: ${stockText}`
         : `💰 ${Number(item.price).toFixed(0)} ₭ (остаток: ${stockText})`;
 
-    const { content } = showGamePopupWithContent(`${iconFor(item.code)} ${escapeHtml(item.name)}`, (c) => {
+    const { content } = showGamePopupWithContent(escapeHtml(item.name), (c) => {
         c.innerHTML = `
+            <div class="item-art-hero">${itemArtHtml(item.code, iconFor(item.code), 96)}</div>
             <div class="profile-row profile-balance">${priceLine}</div>
             ${item.event ? `<div class="profile-row" style="color:${item.event.multiplier < 1 ? "#7ee787" : "#ffb454"}">${item.event.multiplier < 1 ? "📉" : "📈"} ${escapeHtml(item.event.reason)}</div>` : ""}
             <div class="subtitle">${escapeHtml(item.description || "")}</div>

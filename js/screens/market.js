@@ -53,7 +53,7 @@ async function showOrderItemPopup(root) {
     }
 
     if (items.length === 0) {
-        content.innerHTML = `<div class="error">Нет доступных товаров — проверь, есть ли у тебя Лицензия «Продавец» (или «Блат», если ты преступник).</div>`;
+        content.innerHTML = `<div class="error">Нет доступных товаров — проверь, есть ли у тебя Лицензия «Продавец» (или «Разрешение торговли», если ты преступник).</div>`;
         return;
     }
 
