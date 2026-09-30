@@ -28,13 +28,17 @@ export const SCENES = {
     backyard: { x: 59, y: 58, zoom: 420 },
 };
 
-export function screenHeader({ scene, title, sub = "", fallbackTitle }) {
+export function screenHeader({ scene, title, sub = "", fallbackTitle, image = null }) {
     if (!USE_STREET_THEME) {
         return `<div class="title">${fallbackTitle || title}</div>`;
     }
     const s = SCENES[scene] || SCENES.street;
+    // image — своя картинка вместо кусочка улицы (например, воровское логово)
+    const hero = image
+        ? `<div class="street-hero street-hero-image" style="background-image:url('${image}')"></div>`
+        : `<div class="street-hero street-hero-scene" style="--scene-x:${s.x}%;--scene-y:${s.y}%;--scene-zoom:${s.zoom}%"></div>`;
     return `
-        <div class="street-hero street-hero-scene" style="--scene-x:${s.x}%;--scene-y:${s.y}%;--scene-zoom:${s.zoom}%"></div>
+        ${hero}
         <div class="street-sign">
             <div class="street-sign-name">${title}</div>
             ${sub ? `<div class="street-sign-sub">${sub}</div>` : ""}

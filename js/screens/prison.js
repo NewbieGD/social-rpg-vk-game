@@ -3,6 +3,7 @@
 // соседи по камерам. Охранник — подкуп, дверь — побег. Картинки — в
 // js/prisonAssets.js.
 import { apiFetch } from "../api.js";
+import { loadBossStatus, bossCaseHtml, bindBossCase, custodyDealHtml, bindCustodyDeal } from "./bossPower.js";
 import { screenHeader } from "../screenHeader.js";
 import { showGamePopupWithContent, showGameStylePopup } from "../gamePopup.js";
 import { avatarHtml } from "../cosmeticFrames.js";
@@ -22,11 +23,12 @@ export async function renderPrisonScreen(root) {
         return;
     }
 
+    if (st.boss_custody) { st.bribe_used = true; st.escape_used = true; st.has_ransom = false; }
     const header = screenHeader({ scene: "police", title: "Тюрьма", sub: st.in_prison ? "Отбываешь срок" : "Под присмотром полиции", fallbackTitle: "🔒 Тюрьма" });
     root.innerHTML = `
         ${header}
         ${sceneHtml(st)}
-        ${st.in_prison ? actionsHtml(st) : `<div class="card"><div class="subtitle">Ты не в заключении ${infoButton("prison")}</div><div class="profile-dim">Здесь сидят пойманные воры. У каждого есть шанс выйти раньше — подкупом или побегом.</div></div>`}
+        ${st.in_prison ? (st.boss_custody ? `<div id="custody-deal"></div>` : actionsHtml(st)) : `<div class="card"><div class="subtitle">Ты не в заключении ${infoButton("prison")}</div><div class="profile-dim">Здесь сидят пойманные воры. У каждого есть шанс выйти раньше — подкупом или побегом.</div></div>`}
     `;
     bindInfoButtons(root);
 
@@ -37,12 +39,30 @@ export async function renderPrisonScreen(root) {
         };
     });
     if (!st.in_prison) return;
+    if (st.boss_custody) {
+        const box = root.querySelector("#custody-deal");
+        loadBossStatus().then((bs) => {
+            if (!bs || !box) return;
+            box.innerHTML = custodyDealHtml(bs);
+            bindCustodyDeal(box, () => renderPrisonScreen(root));
+        });
+    }
 
     const bribeBtn = root.querySelector("#bribe-btn");
     const escapeBtn = root.querySelector("#escape-btn");
     const openBribe = () => { if (!st.bribe_used) showBribePopup(root, st); };
     const openEscape = () => { if (!st.escape_used) showEscapeIntro(root, st); };
     if (bribeBtn) bribeBtn.onclick = openBribe;
+    const ransomBtn = root.querySelector("#ransom-btn");
+    if (ransomBtn) ransomBtn.onclick = async () => {
+        try {
+            await apiFetch("/api/prison/use_ransom", { method: "POST" });
+            showGameStylePopup("🗝 Ты на свободе!", "Выкуп сработал — охрана открыла дверь.");
+            renderPrisonScreen(root);
+        } catch (e) {
+            showGameStylePopup("Не получилось", e.message);
+        }
+    };
     if (escapeBtn) escapeBtn.onclick = openEscape;
     const guard = root.querySelector(".prison-guard");
     const door = root.querySelector(".prison-door");
@@ -77,6 +97,26 @@ function sceneHtml(st) {
             ${avatarHtml(n.photo_url, n.active_frame, false)}
             <span class="prison-neighbour-name">${escapeHtml(n.name)}</span>
         </button>`).join("");
+
+    // Своя картинка камеры: вместо нарисованной сцены — фон и «горячие точки»
+    // прямо на предметах картинки (окошко в двери — подкуп, замок — побег).
+    if (PRISON_ASSETS.background) {
+        return `
+        <div class="prison-scene prison-scene-image"${bg}>
+            <div class="prison-tally prison-tally-on-image" aria-label="Отсижено часов: ${served}">${tallyMarks(served)}</div>
+            <div class="prison-clock-face prison-clock-on-image">
+                <div class="prison-clock-label">${st.in_prison ? "до свободы" : "камера свободна"}</div>
+                <div class="prison-clock" id="prison-clock">${st.in_prison ? formatClock(left) : "—"}</div>
+            </div>
+            <button class="prison-guard prison-hotspot prison-hatch" ${st.in_prison && !st.bribe_used ? "" : "disabled"} aria-label="Окошко — подкупить охранника">
+                <span class="prison-hotspot-ring"></span><span class="prison-hotspot-label">💰 Окошко</span>
+            </button>
+            <button class="prison-door prison-hotspot prison-lockspot" ${st.in_prison && !st.escape_used ? "" : "disabled"} aria-label="Замок — побег">
+                <span class="prison-hotspot-ring"></span><span class="prison-hotspot-label">🏃 Замок</span>
+            </button>
+        </div>
+        ${neighbours ? `<div class="prison-neighbours"><span class="cafe-counter-label">В соседних камерах:</span>${neighbours}</div>` : ""}`;
+    }
 
     return `
         <div class="prison-scene"${bg}>
@@ -142,6 +182,7 @@ function actionsHtml(st) {
     return `
         <div class="card prison-actions">
             <div class="subtitle">Как выйти раньше ${infoButton("prison")}</div>
+            ${st.has_ransom ? `<button class="btn ransom-btn" id="ransom-btn">🗝 Использовать «Выкуп из тюрьмы» — выйти сейчас</button>` : ""}
             <div class="prison-action">
                 <button class="btn" id="bribe-btn" ${st.bribe_used ? "disabled" : ""}>💰 Подкупить полицейского</button>
                 ${infoButton("bribe")}

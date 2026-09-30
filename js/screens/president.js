@@ -1,9 +1,11 @@
 import { apiFetch } from "../api.js";
+import { loadBossStatus, bossCaseHtml, bindBossCase, custodyDealHtml, bindCustodyDeal } from "./bossPower.js";
 import { screenHeader } from "../screenHeader.js";
 
 export async function renderPresidentDealsScreen(root) {
     root.innerHTML = `
         ${screenHeader({ scene: "government", title: "Дела президентские", sub: "Управление страной", fallbackTitle: "🎖 Дела президентские" })}
+        <div id="p-boss-case"></div>
         <div class="card">
             <div class="subtitle">📊 Панель Президента</div>
             <div id="dashboard-stats" class="profile-dim">Загружаем…</div>
@@ -17,9 +19,7 @@ export async function renderPresidentDealsScreen(root) {
             <button class="option-btn" id="p-treasury">💸 Раздать Госбюджет</button>
             <button class="option-btn" id="p-rename">✏️ Сменить название страны (голосование)</button>
             <button class="option-btn" id="p-flag">🚩 Предложить флаг страны (голосование)</button>
-            <button class="option-btn" id="p-hunt">🎯 Начать охоту на Босса Мафии</button>
             <button class="option-btn" id="p-restock">📦 Пополнить склад (страховки/подписка/лицензия/кандидат/спортзал)</button>
-            <button class="option-btn" id="p-remove">🔫 Убрать Босса Мафии (после охоты)</button>
             <button class="option-btn" id="p-army-rate">🎖 Изменить ставку армии</button>
             <button class="option-btn" id="p-army-disband">💣 Расформировать армию</button>
             <div id="president-result"></div>
@@ -110,13 +110,12 @@ export async function renderPresidentDealsScreen(root) {
             if (colors.length > 0) runFlagVote(root, colors);
         });
     };
-    root.querySelector("#p-hunt").onclick = () => runAction(root, "/api/president/hunt_vor", {});
     root.querySelector("#p-restock").onclick = () => {
         showPicker(pickerArea, "Какой товар пополнить?", options.restockable_items, (code) => {
             runAction(root, "/api/president/restock_item", { code });
         });
     };
-    root.querySelector("#p-remove").onclick = () => runAction(root, "/api/president/remove_vor", {});
+    loadPresidentBossCase(root);
     root.querySelector("#p-army-rate").onclick = () => {
         const rate = promptNumber("Новая ставка армии (₭/час):");
         if (rate !== null) runAction(root, "/api/president/set_army_rate", { rate });
@@ -301,4 +300,13 @@ function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+}
+
+
+async function loadPresidentBossCase(root) {
+    const box = root.querySelector("#p-boss-case");
+    if (!box) return;
+    const st = await loadBossStatus();
+    box.innerHTML = bossCaseHtml(st, "president");
+    bindBossCase(box, () => loadPresidentBossCase(root));
 }

@@ -347,7 +347,10 @@ async function goToWork(root, statusCard, isStudent) {
     try {
         const result = await apiFetch("/api/work/go_to_work", { method: "POST" });
         let text = "✅ Готово";
-        if (result.via === "self_employed_no_commute") text = "✅ Готово, можно принимать заказы";
+        if (result.via === "university_paid") {
+            text = "🎓 Вуз оплатил твою первую поездку — ты уже на учёбе! Со следующего раза дорога — за свой счёт (такси или своя машина).";
+            burstConfetti(resultEl, 24);
+        } else if (result.via === "self_employed_no_commute") text = "✅ Готово, можно принимать заказы";
         else if (result.via === "car") text = `✅ Доехал(а) на своей машине, налог за день — ${result.fare.toFixed(0)}₭`;
         else if (result.driver_found) text = `✅ Такси уже едет, поездка обойдётся в ${result.fare.toFixed(0)}₭`;
         else text = `⏳ Заявка на такси отправлена (${result.fare.toFixed(0)}₭) — ищем свободного водителя, если никто не откликнется за час, дойдёшь пешком бесплатно.`;
@@ -540,7 +543,7 @@ function confirmSwitchProfession(card, opt) {
 
 
 // Предложения взятки от заключённых воров (только полиция)
-async function loadBribeOffers(root) {
+export async function loadBribeOffers(root) {
     const box = root.querySelector("#bribe-offers");
     if (!box) return;
     let offers;

@@ -4083,3 +4083,1401 @@ body.theme-street .card.card-frame-aurora {
     flex: 1;
     margin: 0;
 }
+
+/* фигура вора на карте: красные глаза мерцают */
+.city-thief circle:nth-of-type(2),
+.city-thief circle:nth-of-type(3) {
+    animation: city-thief-eyes 1.6s ease-in-out infinite;
+}
+
+@keyframes city-thief-eyes {
+    0%, 70%, 100% { opacity: 1; }
+    80% { opacity: 0.1; }
+}
+
+/* Заголовок-сцена со своей картинкой (логово, камера и т.п.) */
+.street-hero.street-hero-image {
+    height: 200px;
+    background-size: cover;
+    background-position: center 40%;
+}
+
+/* ---------- Тюрьма со своей картинкой камеры ---------- */
+
+.prison-scene.prison-scene-image {
+    height: auto;
+    aspect-ratio: 1423 / 736;
+    background-size: cover;
+    background-position: center;
+}
+
+.prison-tally-on-image {
+    top: auto;
+    bottom: 34%;
+    left: 27%;
+}
+
+.prison-clock-on-image {
+    top: 8px;
+    left: auto;
+    right: 8px;
+    transform: none;
+    background: rgba(239, 230, 216, 0.92);
+}
+
+.prison-hotspot {
+    position: absolute;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+/* окошко в двери и замок — координаты под картинку камеры */
+.prison-hatch { left: 10.5%; top: 21%; width: 8%; height: 17%; }
+.prison-lockspot { left: 15.5%; top: 50%; width: 7.5%; height: 19%; }
+
+.prison-hotspot-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    border: 2px solid #f2a24a;
+    box-shadow: 0 0 12px rgba(242, 162, 74, 0.6);
+    animation: prison-hotspot-pulse 1.8s ease-in-out infinite;
+}
+
+.prison-hotspot-label {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    margin-top: 4px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(22, 19, 31, 0.85);
+    color: #ffe3bd;
+}
+
+.prison-hotspot:disabled .prison-hotspot-ring {
+    animation: none;
+    border-color: rgba(185, 179, 201, 0.35);
+    box-shadow: none;
+}
+
+.prison-hotspot:disabled .prison-hotspot-label {
+    opacity: 0.55;
+}
+
+@keyframes prison-hotspot-pulse {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+}
+
+/* ---------- Сводка полиции ---------- */
+
+.police-alert {
+    position: relative;
+    overflow: hidden;
+}
+
+.police-alert-active {
+    border-color: #ff5a5f;
+    animation: police-alert-glow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes police-alert-glow {
+    from { box-shadow: 0 0 0 rgba(255, 90, 95, 0); }
+    to { box-shadow: 0 0 18px rgba(61, 123, 255, 0.55); }
+}
+
+.police-siren {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 22px;
+    animation: police-siren-spin 0.8s linear infinite;
+}
+
+@keyframes police-siren-spin {
+    0%, 100% { filter: hue-rotate(0deg) drop-shadow(0 0 6px #ff4d4d); }
+    50% { filter: hue-rotate(200deg) drop-shadow(0 0 6px #3d7bff); }
+}
+
+.police-heist-bar .progress-bar-fill {
+    background: linear-gradient(90deg, #3d7bff, #ff5a5f);
+}
+
+/* ---------- Мини-игры вора (js/screens/thiefGames.js) ---------- */
+
+.tg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    background: rgba(10, 8, 16, 0.9);
+    animation: tg-fade 0.25s ease;
+}
+
+@keyframes tg-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.tg-box {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    max-height: 100%;
+    overflow: auto;
+    border-radius: 16px;
+    border: 1px solid #47465c;
+    padding: 18px 16px 16px;
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    animation: tg-pop 0.3s ease;
+}
+
+@keyframes tg-pop {
+    from { transform: scale(0.94); }
+    to { transform: scale(1); }
+}
+
+.tg-title {
+    position: relative;
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 20px;
+    color: #ffe3bd;
+}
+
+.tg-sub,
+.tg-rules,
+.tg-status {
+    position: relative;
+    font-size: 13px;
+    color: #d9d3e3;
+    margin-top: 6px;
+}
+
+.tg-rules {
+    color: #b9b3c9;
+}
+
+.tg-rules b {
+    color: #f2c46a;
+}
+
+.tg-status {
+    min-height: 20px;
+    font-size: 15px;
+    color: #efe6d8;
+    margin: 12px 0 10px;
+}
+
+/* Карманы: ткань пиджака */
+.tg-pockets-box {
+    background-color: #2a2433;
+    background-image:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0 3px, transparent 3px 7px),
+        repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.12) 0 3px, transparent 3px 7px);
+}
+
+.tg-tries {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.tg-try {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #f2a24a;
+    box-shadow: 0 0 8px rgba(242, 162, 74, 0.6);
+    transition: all 0.3s;
+}
+
+.tg-try-used {
+    background: #47465c;
+    box-shadow: none;
+    transform: scale(0.8);
+}
+
+.tg-pockets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+    animation: tg-sway 3.2s ease-in-out infinite;
+}
+
+@keyframes tg-sway {
+    0%, 100% { transform: rotate(-0.6deg); }
+    50% { transform: rotate(0.6deg); }
+}
+
+.tg-pocket {
+    position: relative;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px dashed #6a5a78;
+    border-radius: 6px 6px 18px 18px;
+    background: #3a3148;
+    cursor: pointer;
+    overflow: hidden;
+    perspective: 400px;
+}
+
+.tg-pocket:not(:disabled):hover {
+    border-color: #f2a24a;
+}
+
+.tg-pocket-inside {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tg-pocket-flap {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: -2px;
+    height: 46%;
+    border-radius: 6px 6px 40% 40%;
+    background: #4a3f5e;
+    border-bottom: 2px dashed #7a6a8a;
+    transform-origin: 50% 0;
+    transition: transform 0.35s ease;
+}
+
+.tg-pocket-flap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tg-pocket-open .tg-pocket-flap {
+    transform: rotateX(-160deg);
+}
+
+.tg-wallet,
+.tg-wallet-img {
+    width: 60%;
+    height: auto;
+    animation: tg-wallet-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes tg-wallet-in {
+    from { transform: translateY(30%) scale(0.4); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
+.tg-pocket-win {
+    border-color: #7ee787;
+    box-shadow: 0 0 14px rgba(126, 231, 135, 0.45);
+}
+
+.tg-pocket-missed {
+    opacity: 0.55;
+    border-color: #f2a24a;
+    box-shadow: none;
+}
+
+.tg-dust {
+    font-size: 24px;
+    animation: tg-dust 0.8s ease forwards;
+}
+
+@keyframes tg-dust {
+    from { transform: translateY(6px) scale(0.6); opacity: 1; }
+    to { transform: translateY(-10px) scale(1.2); opacity: 0.35; }
+}
+
+.tg-done,
+.tg-crack {
+    position: relative;
+    width: 100%;
+    margin: 0;
+}
+
+/* Комната жертвы */
+.tg-room {
+    background-color: #2e2630;
+    min-height: 520px;
+}
+
+.tg-room-wall {
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 18px, transparent 18px 36px),
+        linear-gradient(#5a3f3a 0 64%, #3a2a26 64% 100%);
+}
+
+.tg-room-dorm .tg-room-wall {
+    background:
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 30px),
+        linear-gradient(#4a5058 0 64%, #2e3238 64% 100%);
+}
+
+.tg-room-frame {
+    position: absolute;
+    top: 90px;
+    left: 22px;
+    width: 58px;
+    height: 44px;
+    border: 5px solid #8a6a3a;
+    background: linear-gradient(#5a8a9a, #3a5a4a);
+}
+
+.tg-room-lamp {
+    position: absolute;
+    top: 0;
+    right: 40px;
+    width: 2px;
+    height: 70px;
+    background: #6d6a5a;
+}
+
+.tg-room-lamp span {
+    position: absolute;
+    bottom: -12px;
+    left: -12px;
+    width: 26px;
+    height: 16px;
+    border-radius: 13px 13px 3px 3px;
+    background: #ffd08a;
+    box-shadow: 0 10px 34px 12px rgba(255, 200, 120, 0.3);
+    animation: tg-lamp 3s ease-in-out infinite;
+}
+
+@keyframes tg-lamp {
+    0%, 100% { opacity: 1; }
+    47% { opacity: 1; }
+    50% { opacity: 0.55; }
+    53% { opacity: 1; }
+}
+
+.tg-room-rug {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    bottom: 26px;
+    height: 46px;
+    border-radius: 50%;
+    background: repeating-radial-gradient(#7a2a2a 0 6px, #5a1f24 6px 12px);
+    opacity: 0.8;
+}
+
+.tg-locks {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 24px;
+}
+
+.tg-lock-open {
+    animation: tg-lock-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+    filter: drop-shadow(0 0 6px #7ee787);
+}
+
+.tg-lock-fail {
+    opacity: 0.7;
+}
+
+@keyframes tg-lock-pop {
+    from { transform: scale(0.4) rotate(-20deg); }
+    to { transform: none; }
+}
+
+.tg-safe {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 14px auto 0;
+}
+
+.tg-safe-body,
+.tg-safe-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+}
+
+.tg-safe-body {
+    background: linear-gradient(145deg, #5a5f6b, #34373f);
+    border: 4px solid #25272d;
+    box-shadow: inset 0 0 0 6px #45495a, 0 14px 26px rgba(0, 0, 0, 0.5);
+}
+
+.tg-safe-hinge {
+    position: absolute;
+    left: -8px;
+    top: 36px;
+    width: 10px;
+    height: 34px;
+    border-radius: 3px;
+    background: #25272d;
+}
+
+.tg-safe-hinge-2 {
+    top: auto;
+    bottom: 36px;
+}
+
+.tg-dial {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 170px;
+    height: 170px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.tg-dial-ok {
+    animation: tg-dial-ok 0.6s ease;
+}
+
+.tg-dial-fail {
+    animation: tg-dial-fail 0.6s ease;
+}
+
+@keyframes tg-dial-ok {
+    0% { filter: drop-shadow(0 0 0 #7ee787); }
+    40% { filter: drop-shadow(0 0 16px #7ee787); }
+    100% { filter: none; }
+}
+
+@keyframes tg-dial-fail {
+    0% { filter: drop-shadow(0 0 0 #ff5a5f); }
+    40% { filter: drop-shadow(0 0 16px #ff5a5f); }
+    100% { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tg-pockets, .tg-room-lamp span { animation: none; }
+}
+
+/* ---------- Воры и Босс мафии (js/screens/thieves.js) ---------- */
+
+.throne-card {
+    text-align: center;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at 50% 38%, rgba(212, 175, 55, 0.16), transparent 60%),
+        rgba(29, 26, 43, 0.92);
+}
+
+.throne-martyrs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.throne-martyrs-title {
+    width: 100%;
+    font-size: 12px;
+    color: #b9b3c9;
+}
+
+.throne-martyr-frame {
+    width: 46px;
+    height: 56px;
+    margin: 0 auto;
+    border: 3px solid #b8912a;
+    border-radius: 4px;
+    background: #2a2540;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    filter: grayscale(0.6);
+}
+
+.throne-martyr-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.throne-martyr-name,
+.throne-martyr-num {
+    font-size: 10px;
+    color: #d9c7ae;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.throne-stage {
+    position: relative;
+    width: 220px;
+    height: 250px;
+    margin: 0 auto;
+}
+
+.throne-spot {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 240px;
+    height: 60px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(242, 162, 74, 0.35), transparent 70%);
+    animation: throne-spot 3s ease-in-out infinite;
+}
+
+@keyframes throne-spot {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+.throne-seat {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    width: 200px;
+    transform: translateX(-50%);
+}
+
+.throne-svg,
+.throne-img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.throne-empty .throne-svg {
+    filter: saturate(0.5) brightness(0.8);
+}
+
+.throne-boss {
+    position: absolute;
+    left: 50%;
+    top: 58px;
+    transform: translateX(-50%);
+}
+
+.throne-boss .profile-avatar {
+    width: 70px;
+    height: 70px;
+    font-size: 32px;
+}
+
+.throne-unknown {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: #16131f;
+    border: 2px solid #d4af37;
+    color: #d4af37;
+    font-size: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.throne-crown {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 26px;
+    z-index: 4;
+    animation: throne-crown 2.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(242, 196, 106, 0.8));
+}
+
+@keyframes throne-crown {
+    0%, 100% { transform: translate(-50%, 0) rotate(-4deg); }
+    50% { transform: translate(-50%, -5px) rotate(4deg); }
+}
+
+.throne-diamond-wrap {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 52px;
+    transform: translateX(-50%);
+    z-index: 3;
+}
+
+.throne-diamond,
+.throne-diamond-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    animation: throne-diamond 3.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(143, 227, 255, 0.8));
+}
+
+@keyframes throne-diamond {
+    0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 8px rgba(143, 227, 255, 0.6)); }
+    50% { transform: translateY(-4px); filter: drop-shadow(0 0 18px rgba(143, 227, 255, 1)); }
+}
+
+.throne-glint {
+    position: absolute;
+    top: 6px;
+    left: 14px;
+    width: 14px;
+    height: 14px;
+    background: radial-gradient(circle, #fff 0 18%, transparent 20%),
+        linear-gradient(0deg, transparent 45%, #fff 45% 55%, transparent 55%),
+        linear-gradient(90deg, transparent 45%, #fff 45% 55%, transparent 55%);
+    opacity: 0;
+    animation: throne-glint 2.6s ease-in-out infinite;
+}
+
+.throne-glint-2 {
+    top: 20px;
+    left: 34px;
+    animation-delay: 1.3s;
+}
+
+@keyframes throne-glint {
+    0%, 60%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
+    70% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+    80% { opacity: 0; transform: scale(0.5) rotate(90deg); }
+}
+
+.throne-empty .throne-diamond,
+.throne-empty .throne-diamond-img {
+    opacity: 0.55;
+}
+
+.throne-caption {
+    margin-top: 6px;
+}
+
+.throne-name {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 19px;
+    color: #ffe3bd;
+}
+
+.throne-trust {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #b9b3c9;
+    margin: 10px 0 4px;
+}
+
+.trust-fill {
+    background: #d4af37;
+}
+
+.trust-low {
+    background: #ff5a5f;
+    animation: trust-low 1s ease-in-out infinite alternate;
+}
+
+@keyframes trust-low {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+.raid-night-badge {
+    margin-top: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(61, 90, 160, 0.3);
+    color: #b5d4f4;
+    font-size: 13px;
+    animation: trust-low 1.6s ease-in-out infinite alternate;
+}
+
+.thief-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.thief-stat {
+    padding: 10px 4px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #332f45;
+    text-align: center;
+}
+
+.thief-stat-icon {
+    font-size: 20px;
+}
+
+.thief-stat-value {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 17px;
+    color: #f2a24a;
+    margin-top: 2px;
+}
+
+.thief-stat-label {
+    font-size: 11px;
+    color: #b9b3c9;
+    margin-top: 2px;
+}
+
+.thief-vote-card {
+    border-color: #d4af37;
+    animation: police-alert-glow 1.4s ease-in-out infinite alternate;
+}
+
+.vote-buttons {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.vote-buttons .btn {
+    flex: 1;
+    margin: 0;
+}
+
+.vote-note {
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.req-line {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 14px;
+    padding: 4px 0;
+}
+
+.req-no {
+    color: #ffb1b3;
+}
+
+.boss-panel {
+    border-color: #d4af37;
+}
+
+.boss-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0 10px;
+    border-bottom: 1px solid #332f45;
+}
+
+.boss-row b {
+    color: #f2a24a;
+}
+
+.boss-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 0;
+    border-bottom: 1px solid #332f45;
+}
+
+.boss-block:last-of-type {
+    border-bottom: none;
+}
+
+.boss-block-title {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    color: #ffe3bd;
+    font-size: 15px;
+}
+
+.boss-block .btn {
+    margin: 0;
+}
+
+.boss-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.boss-inline .text-input {
+    margin: 0;
+}
+
+.note-counter {
+    font-size: 12px;
+    color: #b9b3c9;
+    white-space: nowrap;
+}
+
+.thieves-entry {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 12px;
+    align-items: center;
+}
+
+.thieves-entry .btn {
+    grid-column: 1 / -1;
+    margin: 4px 0 0;
+}
+
+.thieves-entry-throne {
+    font-size: 34px;
+    animation: throne-crown 2.4s ease-in-out infinite;
+}
+
+.boss-note-paper {
+    position: relative;
+    padding: 18px 16px 14px;
+    border-radius: 4px;
+    background: #efe2c6;
+    color: #3a2a1a;
+    transform: rotate(-1.5deg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    animation: boss-note-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes boss-note-in {
+    from { transform: rotate(-12deg) scale(0.6); opacity: 0; }
+    to { transform: rotate(-1.5deg); opacity: 1; }
+}
+
+.boss-note-text {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 20px;
+    line-height: 1.3;
+}
+
+.boss-note-sign {
+    margin-top: 10px;
+    text-align: right;
+    font-style: italic;
+}
+
+.ransom-btn {
+    animation: police-alert-glow 1.2s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .throne-crown, .throne-diamond, .throne-glint, .throne-spot, .thieves-entry-throne { animation: none; }
+}
+
+/* ---------- Свержение Босса ---------- */
+
+.depose-card {
+    border-color: #ff5a5f;
+    animation: depose-glow 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes depose-glow {
+    from { box-shadow: 0 0 0 rgba(255, 90, 95, 0); }
+    to { box-shadow: 0 0 20px rgba(255, 90, 95, 0.45); }
+}
+
+.depose-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.depose-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    text-align: left;
+    border-radius: 10px;
+    border: 1px solid #47465c;
+    background: rgba(255, 255, 255, 0.04);
+    color: #efe6d8;
+    cursor: pointer;
+    font: inherit;
+    transition: transform 0.12s, border-color 0.2s;
+}
+
+.depose-option:not(:disabled):active {
+    transform: scale(0.98);
+}
+
+.depose-option:not(:disabled):hover {
+    border-color: #f2a24a;
+}
+
+.depose-option:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.depose-option-mine {
+    border-color: #f2a24a;
+    opacity: 1 !important;
+    background: rgba(242, 162, 74, 0.12);
+}
+
+.depose-option-title {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 15px;
+    color: #ffe3bd;
+}
+
+.depose-option-text {
+    font-size: 12.5px;
+    color: #b9b3c9;
+    line-height: 1.35;
+}
+
+.depose-timer {
+    color: #ffb454;
+    margin-top: 8px;
+}
+
+.ex-boss-title {
+    color: #d4af37;
+    font-family: "Russo One", "Golos Text", sans-serif;
+}
+
+/* ---------- Дело Босса мафии и сделка (js/screens/bossPower.js) ---------- */
+
+.boss-case-hot {
+    border-color: #ff5a5f;
+    animation: depose-glow 1.3s ease-in-out infinite alternate;
+}
+
+.boss-case-name {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 19px;
+    color: #ffe3bd;
+    margin: 6px 0 2px;
+}
+
+.boss-case-unknown {
+    color: #b9b3c9;
+}
+
+.boss-catches {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 10px 0 6px;
+    font-size: 13px;
+    color: #b9b3c9;
+}
+
+.boss-catches b {
+    color: #efe6d8;
+}
+
+.boss-catch-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #47465c;
+}
+
+.boss-catch-dot-on {
+    background: #3d7bff;
+    border-color: #85b7eb;
+    box-shadow: 0 0 6px rgba(61, 123, 255, 0.6);
+}
+
+.boss-case-stage {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 13px;
+    color: #d9d3e3;
+}
+
+.boss-case-stage-hot {
+    background: rgba(255, 90, 95, 0.12);
+    color: #ffc2c4;
+}
+
+.boss-case .btn {
+    margin-top: 8px;
+}
+
+.boss-case-note {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #332f45;
+}
+
+.deal-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.deal-option {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #47465c;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.deal-option .btn,
+.deal-option .text-input {
+    margin: 0;
+}
+
+.deal-option-dark {
+    border-color: #d4af37;
+    background: rgba(212, 175, 55, 0.06);
+}
+
+.deal-option-title {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 15px;
+    color: #ffe3bd;
+}
+
+.deal-option-text {
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: #b9b3c9;
+}
+
+.throne-catches {
+    margin-top: 8px;
+}
+
+/* ---------- Вербовка: досье ---------- */
+
+.dossier-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.dossier-card {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(232, 220, 192, 0.07), rgba(232, 220, 192, 0.02));
+    border: 1px solid #47465c;
+    border-left: 4px solid #b8912a;
+    animation: dossier-in 0.35s ease both;
+}
+
+@keyframes dossier-in {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: none; }
+}
+
+.dossier-photo {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: #e8dcc0;
+    color: #3a2a1a;
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-3deg);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.dossier-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.dossier-name {
+    color: #efe6d8;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dossier-prof {
+    font-size: 12px;
+    color: #b9b3c9;
+}
+
+.dossier-card .btn {
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.dossier-traitor {
+    border-color: #ff5a5f;
+    border-left-color: #ff5a5f;
+    background: rgba(255, 90, 95, 0.1);
+    animation: dossier-in 0.35s ease both, depose-glow 1.2s ease-in-out 0.4s infinite alternate;
+}
+
+.dossier-traitor .dossier-photo {
+    background: #3a1a1c;
+    font-size: 22px;
+}
+
+.dossier-traitor .dossier-prof {
+    color: #ff8a90;
+    font-weight: 600;
+}
+
+.mark-banner {
+    border-color: #6a6a8a;
+    background: rgba(20, 18, 28, 0.92);
+}
+
+.mark-found {
+    border-color: #ff5a5f;
+    animation: depose-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* ---------- Предатели ---------- */
+
+.traitors-entry .btn {
+    margin-top: 8px;
+}
+
+.traitor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.traitor-card {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #47465c;
+    background: rgba(255, 255, 255, 0.04);
+    text-align: left;
+}
+
+.traitor-hot {
+    border-color: #ff5a5f;
+}
+
+.traitor-name {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    color: #ffe3bd;
+    margin-bottom: 4px;
+}
+
+.traitor-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin: 8px 0 4px;
+    color: #d9d3e3;
+}
+
+.traitor-bar {
+    background: linear-gradient(90deg, #7a1f24, #ff5a5f);
+}
+
+/* ---------- Суд над предателем ---------- */
+
+.trial-card {
+    border-color: #d4af37;
+}
+
+.trial-person {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.trial-photo {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    border: 3px solid #b8912a;
+    background: #2a2540;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    overflow: hidden;
+}
+
+.trial-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.trial-name {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 18px;
+    color: #ffe3bd;
+}
+
+.trial-merits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.trial-merits div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.trial-merits b {
+    color: #f2a24a;
+    font-size: 16px;
+}
+
+.trial-merits span {
+    font-size: 11px;
+    color: #b9b3c9;
+}
+
+.duty-police-note {
+    margin-top: 10px;
+    font-size: 12.5px;
+}
+
+/* ---------- Вступление нового вора (js/screens/thiefWelcome.js) ---------- */
+
+.thief-welcome {
+    max-width: 520px;
+    margin: 0 auto;
+    padding-bottom: 20px;
+}
+
+.thief-welcome-hero {
+    position: relative;
+    height: 200px;
+    border-radius: 16px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 18px;
+}
+
+.thief-welcome-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 20%, rgba(12, 10, 18, 0.9));
+}
+
+.thief-welcome-title {
+    position: relative;
+    font-family: "Russo One", "Golos Text", sans-serif;
+    font-size: 26px;
+    color: #ffe3bd;
+    text-shadow: 0 0 18px rgba(242, 162, 74, 0.6);
+    animation: thief-welcome-title 1.2s ease;
+}
+
+@keyframes thief-welcome-title {
+    from { opacity: 0; letter-spacing: 8px; }
+    to { opacity: 1; letter-spacing: 0; }
+}
+
+.thief-welcome-score {
+    position: relative;
+    font-size: 13px;
+    color: #b9b3c9;
+    margin-top: 4px;
+}
+
+.thief-welcome-lead {
+    margin: 16px 4px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #efe6d8;
+    text-align: center;
+}
+
+.thief-welcome-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.thief-welcome-item {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(29, 26, 43, 0.92);
+    border: 1px solid #332f45;
+    animation: dossier-in 0.45s ease both;
+}
+
+.thief-welcome-icon {
+    font-size: 26px;
+    text-align: center;
+}
+
+.thief-welcome-item-title {
+    font-family: "Russo One", "Golos Text", sans-serif;
+    color: #ffe3bd;
+    font-size: 15px;
+}
+
+.thief-welcome-item-text {
+    font-size: 13px;
+    color: #b9b3c9;
+    line-height: 1.45;
+    margin-top: 2px;
+}
+
+.thief-welcome-oath {
+    margin: 18px 4px 14px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid #d4af37;
+    background: rgba(212, 175, 55, 0.08);
+    color: #f3e2a8;
+    font-size: 14.5px;
+    line-height: 1.5;
+    text-align: center;
+    font-style: italic;
+}
+
+.thief-welcome-go {
+    width: 100%;
+    font-size: 17px;
+    animation: police-alert-glow 1.4s ease-in-out infinite alternate;
+}

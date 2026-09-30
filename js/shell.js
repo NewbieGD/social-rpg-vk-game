@@ -42,6 +42,9 @@ const BASE_NAV_ITEMS = [
 
 const CRIME_NAV_ITEM = { id: "crime", icon: "🚨", label: "Криминал", render: renderCrimeScreen };
 const PRISON_NAV_ITEM = { id: "prison", icon: "🔒", label: "Тюрьма", render: renderPrisonScreen };
+const POLICE_NAV_ITEM = { id: "police", icon: "🚔", label: "Сводка полиции", render: (root) => import("./screens/policeBoard.js").then((m) => m.renderPoliceBoardScreen(root)) };
+// Заключённому эти вкладки недоступны (сервер тоже не пустит). Чаты — только с «Пейджером».
+const PRISON_HIDDEN_TABS = new Set(["shop", "map", "market", "license", "army", "modernization", "bureaucrat", "riot"]);
 const PRESIDENT_NAV_ITEM = { id: "president", icon: "🎖", label: "Дела президентские", render: renderPresidentDealsScreen };
 const STUDENT_NAV_ITEM = { id: "work", icon: "🎓", label: "Учёба", render: renderWorkScreen };
 
@@ -54,6 +57,8 @@ export async function renderShell(appRoot) {
     }
 
     let isCriminal = false;
+    let isPolice = false;
+    let hasPager = false;
     let isPrisoner = false;
     let hasLicense = false;
     let isArmy = false;
@@ -67,6 +72,11 @@ export async function renderShell(appRoot) {
         isArmy = !!profile.army_contract_active;
         isPresident = !!profile.is_president;
         isStudent = profile.stage === "student";
+        isPolice = profile.profession === "police" && (profile.stage === "worker" || profile.stage === "student");
+        if (profile.stage === "criminal" || (profile.stage === "prison" && profile.previous_stage === "criminal")) {
+            import("./screens/thieves.js").then((m) => m.checkBossNote()).catch(() => {});
+        }
+        hasPager = !!profile.prison_pager;
     } catch (e) {
         // Профиль не получили — покажем меню без вкладки Криминал, сама вкладка
         // Профиль сообщит об ошибке подробнее при открытии.
@@ -91,6 +101,13 @@ export async function renderShell(appRoot) {
     // нужна, убираем совсем, а не оставляем висеть неактуальной.
     if (hasLicense) {
         navItems = navItems.filter((item) => item.id !== "license");
+    }
+    if (isPrisoner) {
+        navItems = navItems.filter((item) => !PRISON_HIDDEN_TABS.has(item.id) && (item.id !== "chats" || hasPager));
+    }
+    if (isPolice && !isPrisoner) {
+        const at = navItems.findIndex((item) => item.id === "state");
+        navItems = [...navItems.slice(0, at + 1), POLICE_NAV_ITEM, ...navItems.slice(at + 1)];
     }
 
     appRoot.classList.add("has-shell");

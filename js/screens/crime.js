@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { runPocketsGame, runSafeGame } from "./thiefGames.js";
 import { infoButton, bindInfoButtons } from "../infoPopups.js";
 import { screenHeader } from "../screenHeader.js";
 import { playFailSound, playCoinSound, burstConfetti } from "../fx.js";
@@ -21,7 +22,7 @@ export async function renderCrimeScreen(root) {
 
     if (profile.stage === "prison") {
         root.innerHTML = `
-            ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
+            ${screenHeader({ scene: "crime", title: "Криминал", sub: "Воровское логово", fallbackTitle: "🚨 Криминал", image: "assets/backgrounds/thief-den.jpg" })}
             <div class="card"><div class="subtitle">⛓ Ты в тюрьме — сначала нужно освободиться.</div></div>
         `;
         return;
@@ -29,19 +30,18 @@ export async function renderCrimeScreen(root) {
 
     if (profile.stage !== "criminal") {
         root.innerHTML = `
-            ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
+            ${screenHeader({ scene: "crime", title: "Криминал", sub: "Воровское логово", fallbackTitle: "🚨 Криминал", image: "assets/backgrounds/thief-den.jpg" })}
             <div class="card"><div class="subtitle">Этот раздел доступен только преступникам.</div></div>
         `;
         return;
     }
 
     root.innerHTML = `
-        ${screenHeader({ scene: "crime", title: "Криминал", sub: "Тёмная сторона города", fallbackTitle: "🚨 Криминал" })}
+        ${screenHeader({ scene: "crime", title: "Криминал", sub: "Воровское логово", fallbackTitle: "🚨 Криминал", image: "assets/backgrounds/thief-den.jpg" })}
         <div class="card">
             <div class="subtitle">
-                🕵️ Карманная кража — без жертвы, до 5 раз в день без кулдауна, 1-30₭ за раз, 5% простой шанс неудачи.<br><br>
-                🔫 Ограбление — реальная жертва, до 3 раз в день, добыча 15-20% баланса (не больше 120₭), шанс украсть вещь 50%. Чем больше грабишь за день — тем выше шанс, что жертва узнает тебя и сможет заявить в полицию.
-            </div>
+                🕵️ <b>Карманная кража</b> ${infoButton("pickpocket")} — до 5 раз в день, без перерывов. За раз — от 1 до 30₭. После кражи — мини-игра «Карманы»: в трёх карманах из девяти кошельки, открой три — за каждый найденный бонус сверху (1 — +5₭, 2 — +10₭, все 3 — +20₭). С шансом 5% тебя замечают, и кража срывается (0₭, без наказания).<br><br>
+                🔫 <b>Ограбление</b> ${infoButton("safecrack")} — до 3 раз в день, реальная жертва. Добыча 15–20% её баланса (не больше 120₭), с шансом 50% ещё и вещь. В комнате жертвы — сейф с тремя замками: вскрыл 1 — шанс, что жертва тебя узнает, ниже на 1%, 2 — на 2%, все 3 — на 5%. Чем больше грабишь за день, тем выше этот шанс (35% → 45% → 55%): узнавшая жертва может заявить в полицию, а полиция ловит с шансом 30% (стажёр) или 40% (работающий). После ограбления можно спрятать часть добычи в тайник или банк воров.</div>
             <button class="btn btn-secondary" id="pickpocket-btn">🕵️ Карманная кража</button>
             <button class="btn" id="rob-btn">🔫 Ограбить</button>
             <div id="crime-result"></div>
@@ -58,6 +58,7 @@ export async function renderCrimeScreen(root) {
         <div class="card" id="heist-link-card"></div>
     `;
 
+    bindInfoButtons(root);
     root.querySelector("#rob-btn").onclick = () => doCrime(root, "/api/crime/rob", "rob");
     root.querySelector("#pickpocket-btn").onclick = () => doCrime(root, "/api/crime/pickpocket", "pickpocket");
     root.querySelector("#recruitment-btn").onclick = () => showFullScreenFrom(root, renderRecruitmentScreen);
@@ -74,7 +75,19 @@ async function doCrime(root, path, kind) {
 
     let result;
     try {
-        result = await apiFetch(path, { method: "POST" });
+        if (kind === "rob") {
+            // шаг 1 — комната жертвы и сейф, шаг 2 — итог с учётом вскрытых замков
+            const room = await apiFetch("/api/crime/rob/start", { method: "POST" });
+            resultEl.innerHTML = "";
+            const locks = await runSafeGame(room);
+            result = await apiFetch("/api/crime/rob/finish", { method: "POST", body: { token: room.token, locks_opened: locks } });
+        } else {
+            result = await apiFetch(path, { method: "POST" });
+            if (result.status === "success" && result.game) {
+                resultEl.innerHTML = "";
+                result.pocket = await runPocketsGame(result);
+            }
+        }
     } catch (e) {
         resultEl.innerHTML = `<div class="error">${e.message}</div>`;
         return;
@@ -95,12 +108,15 @@ async function doCrime(root, path, kind) {
                     <button class="btn btn-secondary" id="stash-protect-btn" ${result.has_stash ? "" : "disabled"}>🗝 В тайник: ${stashAmount} ₭ (30%)</button>
                     ${result.has_stash ? "" : `<div class="profile-dim protect-hint">Нужен предмет «Тайник» — купи на чёрном рынке.</div>`}
                     <button class="btn btn-secondary" id="bank-protect-btn">🏦 В банк воров: ${bankAmount} ₭ (10%)</button>
+                    ${result.traitor_hunt_active ? `<button class="btn btn-secondary" id="hunt-protect-btn">🎯 На охоту за предателем: ${bankAmount} ₭ (10%)</button>` : ""}
                     <button class="btn btn-secondary" id="skip-protect-btn">Пропустить — оставить всё на балансе</button>
                     <div id="protect-result"></div>
                 </div>
             `);
             content.querySelector("#stash-protect-btn").onclick = () => doProtect(content, "/api/stash/stash_case", result.robbery_id, "stash-protect-btn");
             content.querySelector("#bank-protect-btn").onclick = () => doProtect(content, "/api/stash/bank_case", result.robbery_id, "bank-protect-btn");
+            const huntBtn = content.querySelector("#hunt-protect-btn");
+            if (huntBtn) huntBtn.onclick = () => doProtect(content, "/api/stash/hunt_case", result.robbery_id, "hunt-protect-btn");
             content.querySelector("#skip-protect-btn").onclick = () => {
                 const overlay = content.closest(".profile-overlay");
                 if (overlay) overlay.remove();
@@ -120,7 +136,10 @@ async function doProtect(content, path, robberyId, btnId) {
     resultEl.innerHTML = `<div class="loading">…</div>`;
     try {
         await apiFetch(path, { method: "POST", body: { robbery_id: robberyId } });
-        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ ${btnId === "stash-protect-btn" ? "Спрятано в тайник" : "Внесено в банк воров"}!</div>`;
+        resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ ${btnId === "stash-protect-btn" ? "Спрятано в тайник" : btnId === "hunt-protect-btn" ? "Внесено на охоту за предателем" : "Внесено в банк воров"}!</div>`;
+        // часть добычи уже перемещена — «оставить всё на балансе» больше не правда
+        const skip = content.querySelector("#skip-protect-btn");
+        if (skip) skip.textContent = "Готово";
         const btn = content.querySelector(`#${btnId}`);
         if (btn) btn.disabled = true;
     } catch (e) {
@@ -133,7 +152,11 @@ function formatResult(result, kind) {
         if (result.status === "failed") {
             return `<div class="profile-row" style="color:#ffb454">😬 Не получилось — попробуй ещё раз. Осталось попыток: ${result.attempts_left}.</div>`;
         }
-        return `<div class="profile-row" style="color:#7ee787;font-size:18px">🕵️ Незаметно стащил(а) <b>${result.amount.toFixed(2)}₭</b>!</div><div class="profile-dim" style="margin-top:6px">Осталось попыток сегодня: ${result.attempts_left}.</div>`;
+        const pk = result.pocket;
+        const bonusLine = pk && pk.bonus
+            ? `<div class="profile-row" style="color:#f2c46a">👛 Кошельков найдено: <b>${pk.found_count}</b> → бонус <b>+${pk.bonus}₭</b></div><div class="profile-row">Итого: <b>${pk.total.toFixed(2)}₭</b></div>`
+            : `<div class="profile-dim">Кошельки не найдены — бонуса нет.</div>`;
+        return `<div class="profile-row" style="color:#7ee787;font-size:18px">🕵️ Незаметно стащил(а) <b>${result.amount.toFixed(2)}₭</b></div>${pk ? bonusLine : ""}${result.hunt_share ? `<div class="profile-dim">🎯 ${result.hunt_share.toFixed(2)}₭ (20%) ушло на охоту за предателем.</div>` : ""}<div class="profile-dim" style="margin-top:6px">Осталось попыток сегодня: ${result.attempts_left}.</div>`;
     }
 
     // rob
@@ -144,47 +167,33 @@ function formatResult(result, kind) {
         : `<div class="profile-dim" style="margin-top:6px">Личность осталась в тайне.</div>`;
     const vorText = result.vor_cut > 0 ? `<div class="profile-dim">${result.vor_cut.toFixed(2)}₭ ушло Боссу Мафии.</div>` : "";
     const woundText = result.victim_wounded ? `<div class="profile-dim">Жертва (${victimName}) ещё и ранена.</div>` : "";
-    return `<div class="profile-row" style="color:#7ee787;font-size:18px">💰 Ты ограбил(а) ${victimName} на <b>${result.loot.toFixed(2)}₭</b></div>${itemText}${vorText}${woundText}${identityText}`;
+    const locksText = typeof result.locks_opened === "number"
+        ? `<div class="profile-dim">🔓 Вскрыто замков: ${result.locks_opened} из 3${result.reveal_reduction_pct ? ` — шанс, что тебя узнают, был ниже на ${result.reveal_reduction_pct}%` : ""}.</div>`
+        : "";
+    return `<div class="profile-row" style="color:#7ee787;font-size:18px">💰 Ты ограбил(а) ${victimName} на <b>${result.loot.toFixed(2)}₭</b></div>${itemText}${vorText}${woundText}${locksText}${identityText}`;
 }
 
 async function loadBossMafiaCard(root, profile) {
     const card = root.querySelector("#boss-mafia-card");
-    let state;
+    let ov;
     try {
-        state = await apiFetch("/api/state");
+        ov = await apiFetch("/api/thieves/overview");
     } catch (e) {
         card.innerHTML = "";
         return;
     }
-
-    if (state.boss_mafia) {
-        card.innerHTML = `
-            <div class="subtitle">👑 Сейчас Босс Мафии ${infoButton("boss_mafia")}: ${state.boss_mafia.vk_id === profile.tg_id ? "это ты!" : escapeHtml(state.boss_mafia.username ? "@" + state.boss_mafia.username : "ID " + state.boss_mafia.vk_id)}</div>
-            ${state.boss_mafia.vk_id === profile.tg_id ? `<button class="btn btn-secondary" id="grant-permission-btn" style="margin-top:6px">Разрешить кому-то баллотироваться в депутаты</button>` : ""}
-        `;
-        const grantBtn = card.querySelector("#grant-permission-btn");
-        if (grantBtn) grantBtn.onclick = () => showGrantPermissionPrompt();
-        bindInfoButtons(card);
-        return;
-    }
-
+    const b = ov.boss;
+    card.classList.add("thieves-entry");
     card.innerHTML = `
-        <div class="subtitle">👑 Сейчас вакансия Босса Мафии ${infoButton("boss_mafia")}${state.boss_mafia_election_pending ? " — идут выборы, присоединяйся!" : ""}</div>
-        <div class="profile-dim" style="margin-bottom:8px">Главного вора страны ещё нет. Баллотироваться может вор с Авторитетом 100+ (твой: ${Number(profile.authority || 0).toFixed(0)}).</div>
-        <button class="btn" id="boss-register-btn" ${profile.authority < 100 ? "disabled" : ""}>${state.boss_mafia_election_pending ? "Присоединиться к выборам" : "Баллотироваться в Боссы Мафии"}</button>
-        <div id="boss-register-result"></div>
-    `;
-    bindInfoButtons(card);
-    const btn = card.querySelector("#boss-register-btn");
-    btn.onclick = async () => {
-        const resultEl = card.querySelector("#boss-register-result");
-        resultEl.innerHTML = `<div class="loading">…</div>`;
-        try {
-            const r = await apiFetch("/api/boss_mafia/register", { method: "POST" });
-            resultEl.innerHTML = `<div class="profile-row" style="color:#7ee787">✅ ${r.status === "started" ? "Выборы начались!" : "Ты присоединился(ась) к выборам!"}</div>`;
-        } catch (e) {
-            resultEl.innerHTML = `<div class="error">${e.message}</div>`;
-        }
+        <div class="thieves-entry-throne">${b ? "👑" : "🪑"}</div>
+        <div class="thieves-entry-text">
+            <div class="subtitle">${b ? `Босс Мафии: ${escapeHtml(b.name)}` : "Трон Босса Мафии пуст"}</div>
+            <div class="profile-dim">Воров: ${ov.thieves} · в тюрьме: ${ov.in_prison} · банк: ${ov.bank.toFixed(0)}₭${ov.votes.length ? " · 🗳 идёт голосование!" : ""}</div>
+        </div>
+        <button class="btn" id="thieves-open-btn">👑 Воры и Босс мафии</button>`;
+    card.querySelector("#thieves-open-btn").onclick = async () => {
+        const { renderThievesScreen } = await import("./thieves.js");
+        showFullScreenFrom(root, renderThievesScreen);
     };
 }
 
@@ -245,7 +254,7 @@ async function loadHeistScaleBar(card) {
     const pct = Math.min(100, Math.round((scale.progress / scale.threshold) * 100));
     card.innerHTML = `
         <div class="gov-section-title">💰 До «Ограбления по крупному» ${infoButton("heist")}</div>
-        <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны. Когда шкала заполнится — начнётся налёт на банк страны.</div>
+        <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны. Когда шкала заполнится — начнётся налёт на банк страны. Если полиция наберёт больше очков, один случайный вор-участник (кроме Босса) попадёт в тюрьму.</div>
         <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     `;
     bindInfoButtons(card);

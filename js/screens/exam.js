@@ -102,16 +102,8 @@ async function renderOutcome(root, result) {
     }
 
     if (result.outcome === "criminal_offer_forced") {
-        root.innerHTML = `
-            <div class="exam-paper">
-                <div class="exam-outcome-card">
-                    <div class="exam-outcome-icon">🕶</div>
-                    <div class="exam-outcome-score">Экзамен окончен: ${result.score}/100</div>
-                    <div class="exam-outcome-text">${escapeHtml(result.narrative)}</div>
-                    <button class="btn" onclick="location.reload()">Продолжить</button>
-                </div>
-            </div>
-        `;
+        const { renderThiefWelcome } = await import("./thiefWelcome.js");
+        renderThiefWelcome(root, { forced: true, score: result.score });
         playFailSound();
         return;
     }
@@ -354,6 +346,11 @@ async function chooseCriminalOffer(root, choice) {
         const result = await apiFetch("/api/criminal_offer/choose", { method: "POST", body: { choice } });
         if (result.stage === "pdd_test") {
             await renderPddScreen(root);
+            return;
+        }
+        if (choice === "crime") {
+            const { renderThiefWelcome } = await import("./thiefWelcome.js");
+            renderThiefWelcome(root, { forced: false });
             return;
         }
         showProfessionChosenCard(root);

@@ -302,7 +302,7 @@ function drawBuilding(code, r, ...extra) {
 
 // ---------- Транспорт ----------
 function vehicleSvg(kind) {
-    const img = CITY_MAP_ASSETS.vehicles[kind];
+    const img = CITY_MAP_ASSETS.vehicles[kind === "robbery" ? "thief" : kind];
     if (img) return `<image href="${img}" x="-22" y="-12" width="44" height="24" preserveAspectRatio="xMidYMid meet"/>`;
     const car = (body, roof = "#2a2540", extra = "") => `
         <rect x="-18" y="-10" width="36" height="20" rx="5" fill="${body}"/>
@@ -330,6 +330,12 @@ function vehicleSvg(kind) {
         return `<rect x="-12" y="-5" width="24" height="10" rx="4" fill="#5ecfa0"/>
             <rect x="-14" y="-9" width="12" height="18" rx="2" fill="${C.glow}"/>
             <circle cx="12" cy="0" r="2.4" fill="#fff7d6"/>`;
+    case "robbery":
+        return `<g class="city-thief">
+            <circle cx="0" cy="3" r="9" fill="#16131f"/>
+            <path d="M-8 2 A8 8 0 0 1 8 2 L6 -6 A6 6 0 0 0 -6 -6 Z" fill="#2a2540"/>
+            <circle cx="-2.5" cy="0" r="1.3" fill="#ff5a5f"/><circle cx="2.5" cy="0" r="1.3" fill="#ff5a5f"/>
+        </g>`;
     case "teacher":
         return `<circle cx="0" cy="0" r="8" fill="#b9b3c9"/><circle cx="3" cy="0" r="3.5" fill="#efe6d8"/>`;
     default:
@@ -436,6 +442,13 @@ export async function renderNewCityMap(overlay, helpers) {
 
     const resolve = (label, mv) => {
         if (places[label]) return places[label];
+        if (label === "Переулок") {
+            // случайный выход улицы на край карты — не общага вора, чтобы его нельзя было вычислить
+            const edges = [...V_STREETS.map((x) => ({ x, y: 0 })), ...V_STREETS.map((x) => ({ x, y: H })),
+                ...H_STREETS.map((y) => ({ x: 0, y })), ...H_STREETS.map((y) => ({ x: W, y }))];
+            const e = edges[Math.floor(Math.random() * edges.length)];
+            return { door: e, curb: e };
+        }
         if (label === "Общежитие") {
             const mine = dorms.find((d) => d.residents.some((p) => p.vk_id === mv.vk_id));
             const d = mine || dorms[hash(mv.vk_id) % Math.max(1, dorms.length)];
@@ -515,7 +528,7 @@ function driveVehicle(wrap, mv, from, to, helpers, overlay) {
     let len = 0;
     for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
     const dur = Math.min(14, Math.max(4, len / 110));
-    const isWalker = mv.kind === "teacher";
+    const isWalker = mv.kind === "teacher" || mv.kind === "robbery";
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("class", "city-vehicle");
@@ -536,6 +549,13 @@ function driveVehicle(wrap, mv, from, to, helpers, overlay) {
 }
 
 function showMovementInfo(mv, helpers, overlay) {
+    if (mv.anonymous) {
+        showGamePopupWithContent("🕶 Кто-то в капюшоне", (content) => {
+            content.innerHTML = `<div class="profile-row">${escapeHtml(mv.message)}</div>
+                <div class="profile-dim">Лица не разглядеть. Если жертва узнает вора — сможет заявить в полицию.</div>`;
+        });
+        return;
+    }
     showGamePopupWithContent(`${mv.icon} В пути`, (content) => {
         content.innerHTML = `<div class="profile-row">${escapeHtml(mv.message)}</div>
             <div class="profile-dim">${escapeHtml(mv.from_label)} → ${escapeHtml(mv.to_label)}</div>`;

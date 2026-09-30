@@ -14,18 +14,30 @@ export async function renderRecruitmentScreen(root) {
         return;
     }
 
-    const rows = data.candidates.map((c) => `
-        <div class="crime-candidate-row">
-            <span class="crime-candidate-name" data-vkid="${c.vk_id}">${escapeHtml(c.username ? "@" + c.username : "ID " + c.vk_id)}${c.profession_name ? ` — ${escapeHtml(c.profession_name)}` : ""}</span>
-            <button class="btn btn-secondary crime-candidate-choose" data-vkid="${c.vk_id}">Выбрать жителя</button>
+    const initials = (c) => (c.username || String(c.vk_id)).replace("@", "").slice(0, 2).toUpperCase();
+    const rows = data.candidates.map((c, i) => `
+        <div class="dossier-card ${c.traitor ? "dossier-traitor" : ""}" style="animation-delay:${i * 35}ms">
+            <div class="dossier-photo">${c.traitor ? "🐍" : escapeHtml(initials(c))}</div>
+            <div class="dossier-info">
+                <span class="crime-candidate-name dossier-name" data-vkid="${c.vk_id}">${escapeHtml(c.username ? "@" + c.username : "ID " + c.vk_id)}</span>
+                <span class="dossier-prof">${c.traitor ? "ПРЕДАТЕЛЬ — " : ""}${c.profession_name ? escapeHtml(c.profession_name) : "профессия скрыта"}</span>
+            </div>
+            <button class="btn btn-secondary crime-candidate-choose" data-vkid="${c.vk_id}">Выбрать</button>
         </div>
     `).join("");
 
+    const mark = data.black_mark;
+    const markBanner = !mark ? "" : mark.found
+        ? `<div class="card mark-banner mark-found"><div class="subtitle">🐍 Предатель найден!</div><div class="profile-dim">Экс-Босс <b>${escapeHtml(mark.found.name)}</b> прятался среди граждан — теперь он ${escapeHtml(mark.found.profession)}. Все воры получили весть, началась охота.</div></div>`
+        : `<div class="card mark-banner"><div class="subtitle">🖤 Чёрная метка</div><div class="profile-dim">${mark.checked_now ? "Этот список проверен — предателя в нём нет." : "Этот список уже проверялся."} Осталось зарядов: <b>${mark.charges_left}</b>. Новый список — после следующей вербовки.</div></div>`;
+
     root.innerHTML = `
         ${screenHeader({ scene: "blackmarket", title: "Вербовка", sub: "Найди новых воров", fallbackTitle: "👥 Вербовка" })}
-        <div class="card">
-            <div class="subtitle">Список из 20 случайных честных граждан — обновляется раз в сутки.${data.has_detailed_list ? "" : " Купи «Список вербовки» на чёрном рынке, чтобы видеть профессии и переходить в профиль."}</div>
-            <div id="candidate-list">${rows}</div>
+        ${markBanner}
+        <div class="card dossier-card-wrap">
+            <div class="subtitle">📁 Досье на 20 честных граждан</div>
+            <div class="profile-dim">Список обновляется раз в сутки и после каждой вербовки.${data.has_detailed_list ? " Нажми на имя — откроется профиль." : " Купи «Список вербовки» на чёрном рынке, чтобы видеть профессии и открывать профили."}</div>
+            <div id="candidate-list" class="dossier-grid">${rows}</div>
         </div>
     `;
 

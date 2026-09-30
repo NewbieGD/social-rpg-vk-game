@@ -1,4 +1,5 @@
 import { apiFetch } from "../api.js";
+import { loadBossStatus, bossCaseHtml, bindBossCase, custodyDealHtml, bindCustodyDeal } from "./bossPower.js";
 import { screenHeader } from "../screenHeader.js";
 import { burstConfetti, playSuccessSound, shakeElement } from "../fx.js";
 import { showGameStylePopup } from "../gamePopup.js";
@@ -31,6 +32,8 @@ export async function renderStateScreen(root) {
         fallbackTitle: "🏛 Государство",
     }));
     parts.push(renderCountryCard(state));
+    parts.push(`<div id="state-boss-case"></div>`);
+    parts.push(`<div id="state-traitor-trial"></div>`);
     parts.push(`<div class="card" id="role-call-card"></div>`);
     parts.push(`
         <div class="gov-action-card">
@@ -49,6 +52,11 @@ export async function renderStateScreen(root) {
     parts.push(`<div id="state-result"></div>`);
 
     root.innerHTML = parts.join("");
+    loadTraitorTrial(root);
+    loadBossStatus().then((bs) => {
+        const box = root.querySelector("#state-boss-case");
+        if (box) box.innerHTML = bossCaseHtml(bs, "state");
+    });
 
     root.querySelector("#stats-btn").onclick = () => loadCountryStats(root);
     root.querySelector("#history-toggle-btn").onclick = () => toggleHistorySection(root);
@@ -190,20 +198,20 @@ function renderRoleActionsCard(profile, state) {
         return `<div class="gov-action-card"><div class="gov-section-title">🏛 Ты депутат</div><button class="btn" id="impeach-btn">⚖️ Подписать импичмент президенту</button></div>`;
     }
     if (profile.stage === "criminal") {
-        const hasEnoughAuthority = Number(profile.authority) >= 100;
-        const hasBoss = !!(state && state.boss_mafia);
+        const hasEnoughAuthority = Number(profile.authority) >= 50;
+        const hasBoss = !!(state && state.boss_mafia_exists);
         return `
             <div class="gov-action-card">
                 <div class="gov-section-title">🗳️ Стать депутатом</div>
                 <div class="profile-dim" style="margin-bottom:10px">
-                    Нужен Авторитет 100 и предмет «Кандидат на выборы» (из магазина).
+                    Нужны Авторитет 50, предмет «Кандидат на выборы» (из магазина) и взнос 1000₭ в казну страны.
                     ${hasBoss ? " Пока есть действующий Босс Мафии, ещё нужно его разрешение — договорись в воровском чате." : " Пока Босс Мафии не выбран — можно баллотироваться свободно."}
                 </div>
                 <button class="btn" id="register-deputy-btn" ${hasEnoughAuthority ? "" : "disabled"}>🗳️ Выдвинуться в депутаты</button>
             </div>
         `;
     }
-    return `<div class="gov-action-card"><div class="gov-section-title">🗳️ Стать депутатом</div><div class="profile-dim" style="margin-bottom:10px">Нужен Рейтинг хотя бы 20 и место в топ-50 игроков страны, плюс предмет «Кандидат на выборы» (из магазина).</div><button class="btn" id="register-deputy-btn">🗳️ Выдвинуться в депутаты</button></div>`;
+    return `<div class="gov-action-card"><div class="gov-section-title">🗳️ Стать депутатом</div><div class="profile-dim" style="margin-bottom:10px">Нужны Рейтинг 50, предмет «Кандидат на выборы» (из магазина) и взнос 1000₭ в казну страны.</div><button class="btn" id="register-deputy-btn">🗳️ Выдвинуться в депутаты</button></div>`;
 }
 
 function wireRoleActions(root, profile) {
@@ -482,4 +490,56 @@ function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+}
+
+
+export async function loadTraitorTrial(root) {
+    const box = root.querySelector("#state-traitor-trial");
+    if (!box) return;
+    let d;
+    try {
+        d = await apiFetch("/api/traitors/trial");
+    } catch (e) {
+        return;
+    }
+    const t = d.trial;
+    if (!t) { box.innerHTML = ""; return; }
+    const hours = Math.max(0, Math.ceil((new Date(t.closes_at) - Date.now()) / 3600000));
+    const buttons = !t.can_vote
+        ? `<div class="profile-dim">В этом голосовании участвуют только граждане (не воры).</div>`
+        : t.my_choice
+            ? `<div class="profile-row">Твой голос: <b>${t.my_choice === "liquidate" ? "Ликвидировать" : "Сохранить жизнь"}</b></div>`
+            : `<div class="vote-buttons"><button class="btn" data-trial="liquidate">⚰️ Ликвидировать</button><button class="btn btn-secondary" data-trial="spare">🕊 Сохранить жизнь</button></div>`;
+    box.innerHTML = `
+        <div class="card trial-card">
+            <div class="subtitle">⚖️ Суд над предателем</div>
+            <div class="profile-dim">Воры нашли экс-Босса, перешедшего на сторону власти, и собрали плату за его устранение. Реши его судьбу — голос один, переголосовать нельзя.</div>
+            <div class="trial-person">
+                <div class="trial-photo">${t.traitor.photo_url ? `<img src="${t.traitor.photo_url}" alt="">` : "🐍"}</div>
+                <div>
+                    <div class="trial-name">${escapeHtmlState(t.traitor.name)}</div>
+                    <div class="profile-dim">Сейчас: ${escapeHtmlState(t.traitor.profession)}${t.traitor.ex_boss_number ? ` · экс-${t.traitor.ex_boss_number}-й Босс мафии` : ""}</div>
+                </div>
+            </div>
+            <div class="trial-merits">
+                <div><b>${t.merits.taxes.toFixed(2)} ₭</b><span>налогов заплатил</span></div>
+                <div><b>${t.merits.requests_done}</b><span>заявок выполнил</span></div>
+            </div>
+            <ul class="prison-rules">
+                <li><b>Ликвидировать</b> — начнёт игру с нуля, деньги уйдут в казну, вещи — обратно в магазины.</li>
+                <li><b>Сохранить жизнь</b> — статус предателя снимется, охота закончится, в будущем он сможет снова стать вором.</li>
+            </ul>
+            ${buttons}
+            <div class="profile-dim">Решает большинство. Ничья — жизнь сохраняется. Осталось ~${hours} ч.</div>
+        </div>`;
+    box.querySelectorAll("[data-trial]").forEach((btn) => {
+        btn.onclick = async () => {
+            try {
+                await apiFetch(`/api/traitors/trial/${t.id}`, { method: "POST", body: { choice: btn.dataset.trial } });
+                loadTraitorTrial(root);
+            } catch (e) {
+                box.insertAdjacentHTML("beforeend", `<div class="error">${escapeHtmlState(e.message)}</div>`);
+            }
+        };
+    });
 }

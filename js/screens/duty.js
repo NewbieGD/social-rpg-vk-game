@@ -27,6 +27,7 @@ export async function renderDutyScreen(root) {
         <div class="card">
             <div class="subtitle">Нажми, если ситуация подходит — заявка уйдёт случайному свободному специалисту. Если не подходит, backend просто объяснит, почему нельзя.</div>
             <div id="request-buttons"></div>
+            <div class="profile-dim duty-police-note">👮 Заявление в полицию можно подать, только если ты узнал(а) вора. Полиция ловит с одной попытки: стажёр — 30%, работающий полицейский — 40%. Поймают — украденное вернут, а вор сядет в тюрьму. Не поймают — плата за вызов вернётся.</div>
             <div id="request-result"></div>
         </div>
         <div class="card" id="heist-police-link-card"></div>
@@ -39,9 +40,7 @@ export async function renderDutyScreen(root) {
         // не критично — просто не покажем кулдауны в этот раз
     }
 
-    if (profile.profession === "police" && (profile.stage === "worker" || profile.stage === "student")) {
-        await loadHeistPoliceCard(root);
-    }
+    // Крупное ограбление для полиции теперь в отдельной вкладке «Сводка полиции»
 
     const btnContainer = root.querySelector("#request-buttons");
     REQUEST_BUTTONS.forEach((r) => {

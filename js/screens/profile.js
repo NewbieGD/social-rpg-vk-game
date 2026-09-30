@@ -139,9 +139,12 @@ export async function renderProfileScreen(root) {
         }
         }
     }
+    if (user.ex_boss_number) {
+        mainLines.push(`<div class="profile-row ex-boss-title">🎩 Экс-${user.ex_boss_number}-й Босс мафии</div>`);
+    }
     if (user.stage === "criminal") {
         mainLines.push(`<div class="profile-row">🔫 Авторитет: ${Number(user.authority).toFixed(2)}/100</div>`);
-        mainLines.push(`<div class="profile-dim" style="margin-bottom:4px">При 100 можно баллотироваться в Боссы Мафии и в депутаты (президенты).</div>`);
+        mainLines.push(`<div class="profile-dim" style="margin-bottom:4px">При 50 можно баллотироваться в Боссы Мафии и в депутаты (президенты) — нужен ещё взнос 1000₭.</div>`);
     } else {
         mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
     }
@@ -262,6 +265,9 @@ export async function renderProfileScreen(root) {
     addProfileNavBtn(navCard, "nav-inventory.png", "🎒", "Инвентарь", () => showOverlayScreen(renderInventoryScreen));
     if (!USE_TOWN_MAP_HOME) {
         addProfileNavBtn(navCard, "nav-duty.png", "🚑", "Помощь", () => showOverlayScreen(renderDutyScreen));
+    }
+    if (user.is_vor) {
+        addProfileNavBtn(navCard, "nav-boss.png", "🎩", "Управлять ворами", () => showOverlayScreen((r) => import("./thieves.js").then((m) => m.renderThievesScreen(r))));
     }
     addProfileNavBtn(navCard, "nav-duels.png", "⚔️", "Дуэли", () => showFullScreenFrom(root, renderDuelsScreen, renderProfileScreen), user.pending_duels_count || 0);
     addProfileNavBtn(navCard, "nav-cosmetics.png", "✨", "Косметика", () => showOverlayScreen(renderCosmeticsScreen));
@@ -706,6 +712,7 @@ export async function renderOtherProfile(root, targetVkId) {
         <div class="card${p.is_president ? " profile-card-president" : ""}${cardFrameClass(p.active_card_frame)}">
             <div class="other-profile-avatar">${avatarHtml(p.vk_photo_url, p.active_frame, p.is_president)}</div>
             ${USE_STREET_THEME ? "" : `<div class="title">👤 ${otherNameHtml}</div>`}
+            ${p.ex_boss_number ? `<div class="profile-row ex-boss-title">🎩 Экс-${p.ex_boss_number}-й Босс мафии</div>` : ""}
             <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
             ${p.stage === "criminal" ? `<div class="profile-row">🔫 Авторитет: ${p.authority.toFixed(2)}/100</div>` : `<div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>`}
             <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>

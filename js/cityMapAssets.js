@@ -40,6 +40,7 @@ export const CITY_MAP_ASSETS = {
         doctor: null,
         firefighter: null,
         teacher: null,
+        thief: null, // безымянная фигура вора, идущего на ограбление
     },
 
     // Частный сектор
