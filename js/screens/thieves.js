@@ -85,7 +85,7 @@ function throneHtml(ov) {
                     : `<div class="throne-name">Трон пуст ${infoButton("boss_mafia")}</div><div class="profile-dim">Воры ещё не выбрали Босса.</div>`}
                 ${ov.boss_trust !== null && ov.boss_trust !== undefined ? `
                     <div class="throne-trust"><span>Доверие воров</span><b>${Math.round(ov.boss_trust)}/100</b></div>
-                    <div class="progress-bar"><div class="progress-bar-fill trust-fill ${ov.boss_trust < 50 ? "trust-low" : ""}" style="width:${ov.boss_trust}%"></div></div>` : ""}
+                    <div class="progress-bar pb-gold"><div class="progress-bar-fill trust-fill ${ov.boss_trust < 50 ? "trust-low" : ""}" style="width:${ov.boss_trust}%"></div></div>` : ""}
                 ${ov.boss_catch_count !== null && ov.boss_catch_count !== undefined && b ? `<div class="profile-dim throne-catches">🚔 Полиция ловила и отпускала: <b>${Math.min(ov.boss_catch_count, 5)}/5</b>${ov.boss_exposed ? " — Босс опознан, его видят все" : ov.boss_catch_count >= 4 ? " — ещё раз, и его узнают все" : ""}</div>` : ""}
                 ${ov.raid_night_until ? `<div class="raid-night-badge">🌙 Идёт Ночь налётов — жертвы узнают воров на 10% реже</div>` : ""}
             </div>

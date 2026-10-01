@@ -52,7 +52,7 @@ async function loadHeist(root) {
         card.innerHTML = `
             <div class="subtitle">🕶 Воры готовят крупное ограбление ${infoButton("heist")}</div>
             <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны. Когда шкала заполнится — начнётся налёт на банк, и полиции нужно будет его отбить.</div>
-            <div class="progress-bar police-heist-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
+            <div class="progress-bar police-heist-bar pb-red"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
     }
     bindInfoButtons(card);
 }

@@ -181,6 +181,7 @@ function actionsHtml(st) {
         : "Попытка подкупа за этот срок использована.";
     return `
         <div class="card prison-actions">
+            ${servedBar(st)}
             <div class="subtitle">Как выйти раньше ${infoButton("prison")}</div>
             ${st.has_ransom ? `<button class="btn ransom-btn" id="ransom-btn">🗝 Использовать «Выкуп из тюрьмы» — выйти сейчас</button>` : ""}
             <div class="prison-action">
@@ -194,6 +195,15 @@ function actionsHtml(st) {
             </div>
             <div class="profile-dim">${st.escape_used ? "Попытка побега за этот срок использована." : "Трудно. Успех — свобода, провал — +1 час."}</div>
         </div>`;
+}
+
+function servedBar(st) {
+    if (!st.prison_started_at) return "";
+    const start = new Date(st.prison_started_at).getTime(), end = new Date(st.prison_until).getTime();
+    const total = Math.max(1, end - start), done = Math.min(total, Math.max(0, Date.now() - start));
+    const h = (ms) => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} ч ${m % 60} мин` : `${m} мин`; };
+    return `<div class="pb-row"><span>⛓ Отсижено</span><b>${h(done)} из ${h(total)}</b></div>
+        <div class="progress-bar pb-red" style="margin-bottom:10px"><div class="progress-bar-fill" style="width:${(done / total * 100).toFixed(1)}%"></div></div>`;
 }
 
 function showBribePopup(root, st) {

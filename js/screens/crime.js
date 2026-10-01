@@ -255,7 +255,7 @@ async function loadHeistScaleBar(card) {
     card.innerHTML = `
         <div class="gov-section-title">💰 До «Ограбления по крупному» ${infoButton("heist")}</div>
         <div class="profile-dim" style="margin-bottom:6px">${scale.progress} / ${scale.threshold} успешных ограблений всех воров страны. Когда шкала заполнится — начнётся налёт на банк страны. Если полиция наберёт больше очков, один случайный вор-участник (кроме Босса) попадёт в тюрьму.</div>
-        <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        <div class="progress-bar pb-red"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     `;
     bindInfoButtons(card);
 }

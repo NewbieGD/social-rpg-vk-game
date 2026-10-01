@@ -1,4 +1,5 @@
 import { apiFetch, clearToken } from "../api.js";
+import { uiIconForPng } from "../uiIcons.js";
 import { itemArtHtml, hasItemArt } from "../itemArt.js";
 import { infoButton, bindInfoButtons } from "../infoPopups.js";
 import { showGameStylePopup, showGamePopupWithContent } from "../gamePopup.js";
@@ -113,7 +114,7 @@ export async function renderProfileScreen(root) {
         mainLines.push(`
             <div class="profile-row">🎓 До выпуска: осталось ~${p.hours_left} ч. ${infoButton("graduation")}</div>
             ${user.commute_day_is_today ? "" : `<div class="profile-dim" style="color:#ffb454">⏸ Сегодня ты не поехал(а) на учёбу — часы до выпуска стоят.</div>`}
-            <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (p.hours_done / p.hours_total) * 100)}%"></div></div>
+            <div class="progress-bar pb-green"><div class="progress-bar-fill" style="width:${Math.min(100, (p.hours_done / p.hours_total) * 100)}%"></div></div>
         `);
     }
 
@@ -129,13 +130,13 @@ export async function renderProfileScreen(root) {
         if (barFull && RANK_CONFIRMABLE.includes(user.profession)) {
             mainLines.push(`
                 <div class="profile-row profile-dim">Шкала Ранга заполнена — коллега должен подтвердить рост</div>
-                <div class="progress-bar"><div class="progress-bar-fill" style="width:100%"></div></div>
+                <div class="progress-bar pb-blue"><div class="progress-bar-fill" style="width:100%"></div></div>
                 <button class="btn" id="rank-confirm-btn" style="margin-top:6px">🎖 Повысить ранг</button>
             `);
         } else {
             mainLines.push(`
                 <div class="profile-row profile-dim">До след. уровня Ранга: ${done}/${total} успешных заявок</div>
-                <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(100, (done / total) * 100)}%"></div></div>
+                <div class="progress-bar pb-blue"><div class="progress-bar-fill" style="width:${Math.min(100, (done / total) * 100)}%"></div></div>
             `);
         }
         }
@@ -144,10 +145,10 @@ export async function renderProfileScreen(root) {
         mainLines.push(`<div class="profile-row ex-boss-title">🎩 Экс-${user.ex_boss_number}-й Босс мафии</div>`);
     }
     if (user.stage === "criminal") {
-        mainLines.push(`<div class="profile-row">🔫 Авторитет: ${Number(user.authority).toFixed(2)}/100</div>`);
+        mainLines.push(`<div class="pb-row"><span>🔫 Авторитет</span><b>${Number(user.authority).toFixed(2)}/100</b></div><div class="progress-bar pb-gold"><div class="progress-bar-fill" style="width:${Math.min(100, Math.max(0, Number(user.authority)))}%"></div></div>`);
         mainLines.push(`<div class="profile-dim" style="margin-bottom:4px">При 50 можно баллотироваться в Боссы Мафии и в депутаты (президенты) — нужен ещё взнос 1000₭.</div>`);
     } else {
-        mainLines.push(`<div class="profile-row">⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}: ${Number(user.rating).toFixed(2)}/100</div>`);
+        mainLines.push(`<div class="pb-row"><span>⭐ ${isPresident ? "Рейтинг доверия граждан" : "Рейтинг"}</span><b>${Number(user.rating).toFixed(2)}/100</b></div><div class="progress-bar pb-gold"><div class="progress-bar-fill" style="width:${Math.min(100, Math.max(0, Number(user.rating)))}%"></div></div>`);
     }
     mainLines.push(`<div class="profile-row">⚔️ Дуэли: ${user.duel_wins || 0} побед / ${user.duel_losses || 0} поражений</div>`);
     mainLines.push(`<div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${user.government_rating_level || 0}</div>`);
@@ -721,7 +722,9 @@ export async function renderOtherProfile(root, targetVkId) {
             ${USE_STREET_THEME ? "" : `<div class="title">👤 ${otherNameHtml}</div>`}
             ${p.ex_boss_number ? `<div class="profile-row ex-boss-title">🎩 Экс-${p.ex_boss_number}-й Босс мафии</div>` : ""}
             <div class="profile-row">💼 ${escapeHtml(p.profession_name || "—")}${p.profession ? ` <span class="profession-info-btn" id="other-profession-info-btn">❗</span>` : ""}</div>
-            ${p.stage === "criminal" ? `<div class="profile-row">🔫 Авторитет: ${p.authority.toFixed(2)}/100</div>` : `<div class="profile-row">⭐ Рейтинг: ${p.rating.toFixed(2)}/100</div>`}
+            ${p.stage === "criminal"
+                ? `<div class="pb-row"><span>🔫 Авторитет</span><b>${p.authority.toFixed(2)}/100</b></div><div class="progress-bar pb-gold"><div class="progress-bar-fill" style="width:${Math.min(100, Math.max(0, p.authority))}%"></div></div>`
+                : `<div class="pb-row"><span>⭐ Рейтинг</span><b>${p.rating.toFixed(2)}/100</b></div><div class="progress-bar pb-gold"><div class="progress-bar-fill" style="width:${Math.min(100, Math.max(0, p.rating))}%"></div></div>`}
             <div class="profile-row">⚔️ Дуэли: ${p.duel_wins} побед / ${p.duel_losses} поражений</div>
             <div class="profile-row profile-dim">🌍 Рейтинг государства: уровень ${p.government_rating_level || 0}</div>
             ${badges.length ? `<div class="profile-badges">${badges.map((b) => `<div>${b}</div>`).join("")}</div>` : ""}
@@ -857,8 +860,7 @@ function addProfileNavBtn(container, iconFile, emoji, label, onClick, badgeCount
     const btn = document.createElement("button");
     btn.className = "btn btn-secondary profile-nav-btn";
     btn.innerHTML = `
-        <img src="assets/ui/${iconFile}" class="profile-nav-icon" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-        <span class="profile-nav-emoji-fallback" style="display:none">${emoji}</span>
+        <span class="profile-nav-icon-wrap">${uiIconForPng(iconFile, emoji, 26)}</span>
         <span>${escapeHtml(label)}</span>
         ${badgeCount > 0 ? `<span class="profile-nav-badge">+${badgeCount}</span>` : ""}
     `;

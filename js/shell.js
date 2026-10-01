@@ -1,4 +1,5 @@
 import { apiFetch } from "./api.js";
+import { uiIcon } from "./uiIcons.js";
 import { renderProfileScreen } from "./screens/profile.js";
 import { renderShopScreen } from "./screens/shop.js";
 import { renderWorkScreen } from "./screens/work.js";
@@ -123,7 +124,8 @@ export async function renderShell(appRoot) {
         const btn = document.createElement("button");
         btn.className = "nav-btn";
         btn.id = `nav-${item.id}`;
-        btn.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${item.id === "notifications" ? '<span class="nav-badge" id="notif-badge" style="display:none">0</span>' : ""}${item.id === "army" ? '<span class="nav-badge" id="army-badge" style="display:none">!</span>' : ""}${item.id === "work" ? '<span class="nav-badge" id="work-badge" style="display:none">0</span>' : ""}${item.id === "shop" ? '<span class="nav-badge" id="shop-badge" style="display:none">0</span>' : ""}${item.id === "state" ? '<span class="nav-badge" id="gov-badge" style="display:none">0</span>' : ""}`;
+        const iconKey = item.id === "work" && item.icon === "🎓" ? "study" : item.id;
+        btn.innerHTML = `<span class="nav-icon">${uiIcon(iconKey, item.icon, 22)}</span><span class="nav-label">${item.label}</span>${item.id === "notifications" ? '<span class="nav-badge" id="notif-badge" style="display:none">0</span>' : ""}${item.id === "army" ? '<span class="nav-badge" id="army-badge" style="display:none">!</span>' : ""}${item.id === "work" ? '<span class="nav-badge" id="work-badge" style="display:none">0</span>' : ""}${item.id === "shop" ? '<span class="nav-badge" id="shop-badge" style="display:none">0</span>' : ""}${item.id === "state" ? '<span class="nav-badge" id="gov-badge" style="display:none">0</span>' : ""}`;
         btn.onclick = () => switchTo(item.id, content, nav, navItems);
         nav.appendChild(btn);
     });

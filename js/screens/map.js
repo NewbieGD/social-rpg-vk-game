@@ -250,7 +250,8 @@ function wireMarkerClicks(overlay, markers) {
 
 async function showDormPeople(overlay, dorm) {
     showGamePopupWithContent(`🏢 Общага №${dorm.number}`, (content) => {
-        content.innerHTML = `<div class="profile-dim" style="margin-bottom:8px">Жильцы (${dorm.residents.length}/20):</div>`;
+        content.innerHTML = `<div class="pb-row"><span>🛏 Жильцы</span><b>${dorm.residents.length} из 20</b></div>
+            <div class="progress-bar ${dorm.residents.length >= 18 ? "pb-red" : "pb-blue"}" style="margin-bottom:10px"><div class="progress-bar-fill" style="width:${Math.min(100, dorm.residents.length * 5)}%"></div></div>`;
         if (!dorm.residents.length) {
             content.innerHTML += `<div class="profile-dim">Пока пусто.</div>`;
             return;
