@@ -5863,3 +5863,22 @@ body.theme-street .card.card-frame-aurora {
 .v-forsale {
     cursor: pointer;
 }
+
+/* ---------- Новая карта города (js/screens/cityMap.js) ---------- */
+
+.city-map-svg {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+/* Контейнер карточки карты, если он используется */
+.map-svg-card, .city-map-container {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
