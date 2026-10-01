@@ -1,7 +1,7 @@
 import { apiFetch } from "../api.js";
 // Метка версии карты: меняется с обновлением — браузер не возьмёт старый файл из кэша
-const MAP_BUILD = "2026-10-01-1";
-import { USE_NEW_CITY_MAP, USE_ISO_CITY_MAP } from "../themeConfig.js";
+const MAP_BUILD = "2026-10-01-2";
+import { USE_NEW_CITY_MAP, USE_ISO_CITY_MAP, USE_CITY_VIEW_MAP } from "../themeConfig.js";
 import { showGamePopupWithContent } from "../gamePopup.js";
 
 const VIEW_W = 700;
@@ -63,6 +63,11 @@ export async function renderMapScreen(root) {
     document.body.appendChild(overlay);
     if (USE_NEW_CITY_MAP) {
         // Новая карта (js/screens/cityMap.js). Попапы профиля и общаги — общие.
+        if (USE_CITY_VIEW_MAP) {
+            const { renderCityView } = await import(`./cityView.js?v=${MAP_BUILD}`);
+            await renderCityView(overlay, { showPublicProfile, showDormPeople });
+            return;
+        }
         if (USE_ISO_CITY_MAP) {
             const { renderIsoCityMap } = await import(`./isoCity.js?v=${MAP_BUILD}`);
             await renderIsoCityMap(overlay, { showPublicProfile, showDormPeople });

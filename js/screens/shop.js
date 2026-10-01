@@ -48,6 +48,12 @@ export async function renderShopScreen(root) {
     }
 
     renderShelves(root, items, profile, "shop");
+    if (window.__openShopItem) {
+        const code = window.__openShopItem;
+        window.__openShopItem = null;
+        const item = items.find((it) => it.code === code);
+        if (item) showItemPopup(item, items, profile, "shop");
+    }
     checkNewArrivals();
     if (profile.stage === "criminal") loadStashBanner(root);
 }

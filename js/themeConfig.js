@@ -16,3 +16,7 @@ export const USE_NEW_CITY_MAP = true;
 // Изометрическая карта города (объёмные здания, машинки и человечки).
 // false — прежняя карта «вид сверху».
 export const USE_ISO_CITY_MAP = true;
+
+// Карта в перспективе «три четверти» (ряды слева направо, смена дня и ночи).
+// Главнее изометрии: false — вернётся изометрия (USE_ISO_CITY_MAP).
+export const USE_CITY_VIEW_MAP = true;
